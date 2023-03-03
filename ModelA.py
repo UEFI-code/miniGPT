@@ -5,11 +5,11 @@ import torch.nn.functional as F
 class myModel(nn.Module):
     def __init__(self):
         super(myModel, self).__init__()
-        self.Emb = nn.Embedding(95 + 1, 256) # Char level embedding
+        self.Emb = nn.Embedding(256, 256) # Char level embedding
         self.Conv1 = nn.Conv1d(256, 512, 3, stride=1, padding=1)
         self.Conv2 = nn.Conv1d(256, 512, 3, stride=1, padding=1)
         self.Conv3 = nn.Conv1d(256, 256, 3, stride=1, padding=1)
-        self.fc = nn.Linear(256, 95 + 1)
+        self.fc = nn.Linear(256, 256)
         self.softmax = nn.LogSoftmax(dim=1)
         self.glu = nn.GLU(dim=1)
     

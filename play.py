@@ -8,7 +8,7 @@ theModel = ModelA.myModel()
 #theModel.load_state_dict(torch.load('model.pth'))
 
 testStr = 'Hello Wor'
-testStr = [ord(c) - 32 for c in testStr]
+testStr = [ord(c) for c in testStr]
 testStr = torch.tensor(testStr, dtype=torch.long)
 testStr = testStr.unsqueeze(0)
 print(testStr)
@@ -17,8 +17,8 @@ respond = np.argmax(respond.detach().numpy(), axis=2)
 print(respond)
 resStr = []
 for c in respond[0]:
-    if c < 95:
-        resStr.append(chr(c + 32))
+    if c > 0:
+        resStr.append(chr(c))
     else:
         resStr.append('<EOG>')
         break
