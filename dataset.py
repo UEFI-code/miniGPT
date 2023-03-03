@@ -7,7 +7,7 @@ class DataWarpper():
     def __init__(self, contextSize, filepath):
         self.contextSize = contextSize
         self.index = 0
-        self.txt = open(filepath, 'r').read()
+        self.bin = open(filepath, 'rb').read()
     
     def str_encoder(self, theStr):
         Context = []
@@ -20,23 +20,34 @@ class DataWarpper():
             Context += [0] * (self.contextSize - len(Context))
         return Context
     
+    def bin_encoder(self, theBin):
+        Context = []
+        for i in range(len(theBin)):
+            if i < self.contextSize:
+                Context.append(theBin[i])
+            else:
+                break
+        if len(Context) < self.contextSize:
+            Context += [0] * (self.contextSize - len(Context))
+        return Context
+    
     def makeBatch(self, batchSize):
         batch = []
         for _ in range(batchSize):
-            if self.contextSize <= len(self.txt):
-                if self.index + self.contextSize <= len(self.txt):
-                    batch.append(self.str_encoder(self.txt[self.index:self.index + self.contextSize]))
+            if self.contextSize <= len(self.bin):
+                if self.index + self.contextSize <= len(self.bin):
+                    batch.append(self.bin_encoder(self.bin[self.index:self.index + self.contextSize]))
                     self.index += self.contextSize
                 else:
-                    if self.index < len(self.txt):
-                        batch.append(self.str_encoder(self.txt[self.index:]))
+                    if self.index < len(self.bin):
+                        batch.append(self.bin_encoder(self.bin[self.index:]))
                         self.index = 0
                     else:
                         self.index = 0
-                        batch.append(self.str_encoder(self.txt[:self.contextSize]))
+                        batch.append(self.str_encoder(self.bin[:self.contextSize]))
                         self.index += self.contextSize
             else:
-                batch.append(self.str_encoder(self.txt))
+                batch.append(self.str_encoder(self.bin))
                 self.index = 0
         return torch.tensor(batch, dtype=torch.long)
 
