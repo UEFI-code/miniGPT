@@ -2,12 +2,20 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import os
 
 class DataWarpper():
-    def __init__(self, contextSize, filepath):
+    def __init__(self, contextSize, folderpath):
         self.contextSize = contextSize
         self.index = 0
-        self.bin = open(filepath, 'rb').read()
+        self.bin = []
+        file_count = 0
+        for i in os.walk(folderpath):
+            for j in i[2]:
+                if j.endswith('.py') or j.endswith('.txt'):
+                    self.bin += open(os.path.join(i[0], j), 'rb').read()
+                    file_count += 1
+        print('Total Loaded Files: {}'.format(file_count))
     
     def str_encoder(self, theStr):
         Context = []
@@ -52,5 +60,5 @@ class DataWarpper():
         return torch.tensor(batch, dtype=torch.long)
 
 if __name__ == '__main__':
-    dataset = DataWarpper(256, 'dataset.py')
+    dataset = DataWarpper(256, './')
     print(dataset.makeBatch(10))
