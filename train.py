@@ -12,24 +12,27 @@ contextSize = 1024
 optim = torch.optim.Adam(theModel.parameters(), lr=0.0001)
 optim.zero_grad()
 lossfunc = nn.CrossEntropyLoss()
-datar = dataset.DataWarpper(contextSize, 'dataset.py')
+datar = dataset.DataWarpper(contextSize, './')
+batchSize = 16
+epoch = 1000
 
 if trainingDevice.type == 'cuda':
     print('Using GPU')
     theModel = theModel.cuda()
 
-for _ in range(1000):
-    inputContext = datar.makeBatch(10)
-    #print(inputContext)
-    if trainingDevice.type == 'cuda':
-        inputContext = inputContext.cuda()
-    modelResponse = theModel(inputContext).permute(0, 2, 1)
-    #print(modelResponse.shape)
-    # print(inputContext.shape)
-    loss = lossfunc(modelResponse, inputContext)
-    print(loss)
-    loss.backward()
-    optim.step()
+for n in range(epoch):
+    for _ in range(len(datar.bin) // (contextSize * batchSize)):
+        inputContext = datar.makeBatch(batchSize)
+        #print(inputContext)
+        if trainingDevice.type == 'cuda':
+            inputContext = inputContext.cuda()
+        modelResponse = theModel(inputContext).permute(0, 2, 1)
+        #print(modelResponse.shape)
+        # print(inputContext.shape)
+        loss = lossfunc(modelResponse, inputContext)
+        loss.backward()
+        optim.step()
+    print('Epoch: {} Loss: {}'.format(n, loss.item()))
 
 torch.save(theModel.state_dict(), 'model.pth')
 
