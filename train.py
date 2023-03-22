@@ -22,14 +22,15 @@ if trainingDevice.type == 'cuda':
 
 for n in range(epoch):
     for _ in range(datar.totalBinSize // (contextSize * batchSize)):
-        inputContext = datar.makeBatch(batchSize)
+        target, source = datar.makeBatch(batchSize)
         #print(inputContext)
         if trainingDevice.type == 'cuda':
-            inputContext = inputContext.cuda()
-        modelResponse = theModel(inputContext).permute(0, 2, 1)
+            target = target.cuda()
+            source = source.cuda()
+        modelResponse = theModel(source).permute(0, 2, 1)
         #print(modelResponse.shape)
         # print(inputContext.shape)
-        loss = lossfunc(modelResponse, inputContext)
+        loss = lossfunc(modelResponse, target)
         loss.backward()
         optim.step()
     print('Epoch: {} Loss: {}'.format(n, loss.item()))
@@ -38,7 +39,7 @@ torch.save(theModel.state_dict(), 'model.pth')
 
 while True:
     myStr = input('Enter a string: ')
-    inputContext = datar.str_encoder(myStr)
+    inputContext, _ = datar.str_encoder(myStr)
     inputContext = torch.tensor(inputContext, dtype=torch.long)
     inputContext = inputContext.unsqueeze(0)
     if trainingDevice.type == 'cuda':
