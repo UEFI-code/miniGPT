@@ -14,7 +14,7 @@ optim.zero_grad()
 lossfunc = nn.CrossEntropyLoss()
 datar = dataset.DataWarpper(contextSize, './')
 batchSize = 8
-epoch = 1000
+epoch = 128
 
 if trainingDevice.type == 'cuda':
     print('Using GPU')
@@ -43,10 +43,20 @@ while True:
     inputContext = inputContext.unsqueeze(0)
     if trainingDevice.type == 'cuda':
         inputContext = inputContext.cuda()
-    modelResponse = theModel(inputContext)
-    modelResponse = np.argmax(modelResponse.cpu().detach().numpy(), axis=2)
+    rtContext = inputContext
+    i = len(myStr)
+    for _ in range(i, contextSize):
+        modelResponse = theModel(rtContext)
+        modelResponse = np.argmax(modelResponse.cpu().detach().numpy(), axis=2)
+        if modelResponse[0][i] == 0:
+            break
+        modelResponse[0][i+1:] = 0
+        rtContext = torch.tensor(modelResponse, dtype=torch.long).to(trainingDevice)
+        i += 1
+    
     resStr = []
-    for c in modelResponse[0]:
+    for c in rtContext[0]:
+        c = int(c.item())
         if c > 0:
             resStr.append(chr(c))
         else:
