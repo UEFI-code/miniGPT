@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import dataset2 as dataset
+import tqdm
 
 trainingDevice = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -21,7 +22,7 @@ if trainingDevice.type == 'cuda':
     theModel = theModel.cuda()
 
 for n in range(epoch):
-    for _ in range(datar.totalBinSize // (contextSize * batchSize)):
+    for i in tqdm(range(datar.totalBinSize // (contextSize * batchSize))):
         target, source = datar.makeBatch(batchSize)
         #print(inputContext)
         if trainingDevice.type == 'cuda':
@@ -33,9 +34,11 @@ for n in range(epoch):
         loss = lossfunc(modelResponse, target)
         loss.backward()
         optim.step()
+        if (i + 1) % 1000 == 0:
+            print('Epoch: {} Batch: {} Loss: {}'.format(n, i, loss.item()))
+            torch.save(theModel.state_dict(), 'model.pth')
     print('Epoch: {} Loss: {}'.format(n, loss.item()))
-
-torch.save(theModel.state_dict(), 'model.pth')
+    torch.save(theModel.state_dict(), 'model.pth')
 
 while True:
     myStr = input('Enter a string: ')
