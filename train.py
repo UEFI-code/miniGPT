@@ -9,12 +9,16 @@ from tqdm import tqdm
 trainingDevice = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 theModel = ModelA.myModel()
+try:
+    theModel.load_state_dict(torch.load('model.pth'))
+except:
+    pass
 contextSize = 1024
 optim = torch.optim.Adam(theModel.parameters(), lr=0.0001)
 optim.zero_grad()
 lossfunc = nn.CrossEntropyLoss()
 datar = dataset.DataWarpper(contextSize, '/storage/nfs/uefi/miniGPTDataset/')
-batchSize = 32
+batchSize = 100
 epoch = 128
 
 if trainingDevice.type == 'cuda':
