@@ -18,10 +18,10 @@ try:
             name = k[7:]
             new_state_dict[name] = v
         theModel.load_state_dict(new_state_dict)
-        print('Model resume from Parallel checkpoint')
+        print('Model resumed from Parallel checkpoint')
     else:
         theModel.load_state_dict(state_dict)
-        print('Model resume from Normal checkpoint')
+        print('Model resumed from Normal checkpoint')
 except:
     print('No model checkpoint found, start training from scratch')
     pass
@@ -57,7 +57,9 @@ for n in range(epoch):
         except RuntimeError as e:
             print(e)
             print('Error at Epoch: {} Batch: {}'.format(n, i))
-            print('Continue to next batch')
+            if 'illegal memory access' in str(e):
+                print('Restarting training')
+                exit(-1)
         if (i + 1) % 100 == 0:
             print('\nEpoch: {} Batch: {} Loss: {}'.format(n, i, loss.item()))
             torch.save(theModel.state_dict(), 'model.pth')

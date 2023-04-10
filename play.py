@@ -6,7 +6,7 @@ import numpy as np
 import dataset2
 
 class trickObj:
-    contextSize = 10
+    contextSize = 1024
     str_encoder = dataset2.DataWarpper.str_encoder
     bin_encoder = dataset2.DataWarpper.bin_encoder
 
@@ -20,26 +20,27 @@ if 'module' in list(state_dict.keys())[0]:
         name = k[7:]
         new_state_dict[name] = v
     theModel.load_state_dict(new_state_dict)
-    print('Model resume from Parallel checkpoint')
+    print('Model resumed from Parallel checkpoint')
 else:
     theModel.load_state_dict(state_dict)
-    print('Model resume from Normal checkpoint')
+    print('Model resumed from Normal checkpoint')
 
-testStr = 'Hello Wor'
+testStr = 'Hello World'
 # testStr = [ord(c) for c in testStr]
 # testStr = torch.tensor(testStr, dtype=torch.long)
 # testStr = testStr.unsqueeze(0)
-testStr, _ = myDataPrep.str_encoder(testStr)
+exp, testStr = myDataPrep.str_encoder(testStr)
+print(exp)
+print(testStr)
 testStr = torch.tensor(testStr, dtype=torch.long)
 testStr = testStr.unsqueeze(0)
-print(testStr)
 respond = theModel(testStr)
 respond = np.argmax(respond.detach().numpy(), axis=2)
 print(respond)
 resBin = b''
 for c in respond[0]:
     resBin += int(c).to_bytes(1, 'little')
-
+print(resBin)
 try:
     print(resBin.decode('utf-8'))
 except:
