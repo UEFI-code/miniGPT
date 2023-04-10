@@ -10,8 +10,20 @@ trainingDevice = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 theModel = ModelA.myModel()
 try:
-    theModel.load_state_dict(torch.load('model.pth'))
+    # model.pth maybe trained in parallel mode
+    state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
+    if 'module' in list(state_dict.keys())[0]:
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            name = k[7:]
+            new_state_dict[name] = v
+        theModel.load_state_dict(new_state_dict)
+        print('Model resume from Parallel checkpoint')
+    else:
+        theModel.load_state_dict(state_dict)
+        print('Model resume from Normal checkpoint')
 except:
+    print('No model checkpoint found, start training from scratch')
     pass
 contextSize = 1024
 optim = torch.optim.Adam(theModel.parameters(), lr=0.0001)
@@ -35,13 +47,17 @@ for n in range(epoch):
         if trainingDevice.type == 'cuda':
             target = target.cuda()
             source = source.cuda()
-
-        modelResponse = theModel(source).permute(0, 2, 1)
-        #print(modelResponse.shape)
-        # print(inputContext.shape)
-        loss = lossfunc(modelResponse, target)
-        loss.backward()
-        optim.step()
+        try:
+            modelResponse = theModel(source).permute(0, 2, 1)
+            #print(modelResponse.shape)
+            # print(inputContext.shape)
+            loss = lossfunc(modelResponse, target)
+            loss.backward()
+            optim.step()
+        except RuntimeError as e:
+            print(e)
+            print('Error at Epoch: {} Batch: {}'.format(n, i))
+            print('Continue to next batch')
         if (i + 1) % 100 == 0:
             print('\nEpoch: {} Batch: {} Loss: {}'.format(n, i, loss.item()))
             torch.save(theModel.state_dict(), 'model.pth')
