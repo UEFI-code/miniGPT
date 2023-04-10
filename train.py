@@ -13,8 +13,8 @@ contextSize = 1024
 optim = torch.optim.Adam(theModel.parameters(), lr=0.0001)
 optim.zero_grad()
 lossfunc = nn.CrossEntropyLoss()
-datar = dataset.DataWarpper(contextSize, './')
-batchSize = 8
+datar = dataset.DataWarpper(contextSize, '/storage/nfs/uefi/miniGPTDataset/')
+batchSize = 32
 epoch = 128
 
 if trainingDevice.type == 'cuda':
@@ -34,8 +34,8 @@ for n in range(epoch):
         loss = lossfunc(modelResponse, target)
         loss.backward()
         optim.step()
-        if (i + 1) % 1000 == 0:
-            print('Epoch: {} Batch: {} Loss: {}'.format(n, i, loss.item()))
+        if (i + 1) % 100 == 0:
+            print('\nEpoch: {} Batch: {} Loss: {}'.format(n, i, loss.item()))
             torch.save(theModel.state_dict(), 'model.pth')
     print('Epoch: {} Loss: {}'.format(n, loss.item()))
     torch.save(theModel.state_dict(), 'model.pth')
