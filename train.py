@@ -20,14 +20,18 @@ epoch = 128
 if trainingDevice.type == 'cuda':
     print('Using GPU')
     theModel = theModel.cuda()
+    # Enable Data Parallelism
+    theModel = nn.DataParallel(theModel)
 
 for n in range(epoch):
     for i in tqdm(range(datar.totalBinSize // (contextSize * batchSize))):
+        optim.zero_grad()
         target, source = datar.makeBatch(batchSize)
         #print(inputContext)
         if trainingDevice.type == 'cuda':
             target = target.cuda()
             source = source.cuda()
+
         modelResponse = theModel(source).permute(0, 2, 1)
         #print(modelResponse.shape)
         # print(inputContext.shape)
