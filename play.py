@@ -8,6 +8,7 @@ import dataset2
 class trickObj:
     contextSize = 10
     str_encoder = dataset2.DataWarpper.str_encoder
+    bin_encoder = dataset2.DataWarpper.bin_encoder
 
 myDataPrep = trickObj()
 theModel = ModelA.myModel()
@@ -34,8 +35,8 @@ except:
     print('Decode error')
 
 while True:
-    userInput = input('Enter a string: ')
-    userInput, _ = myDataPrep.str_encoder(userInput)
+    userInput = input('Enter a string: ').encode('utf-8')
+    userInput, _ = myDataPrep.bin_encoder(userInput)
     userInput = torch.tensor(userInput, dtype=torch.long)
     userInput = userInput.unsqueeze(0)
     respond = theModel(userInput)
