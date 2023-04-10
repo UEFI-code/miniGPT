@@ -24,15 +24,14 @@ print(testStr)
 respond = theModel(testStr)
 respond = np.argmax(respond.detach().numpy(), axis=2)
 print(respond)
-resStr = []
+resBin = b''
 for c in respond[0]:
-    if c > 0:
-        resStr.append(chr(c))
-    else:
-        resStr.append('<EOG>')
-        break
+    resBin += int(c).to_bytes(1, 'little')
 
-print(''.join(resStr))
+try:
+    print(resBin.decode('utf-8'))
+except:
+    print('Decode error')
 
 while True:
     userInput = input('Enter a string: ')
@@ -41,11 +40,10 @@ while True:
     userInput = userInput.unsqueeze(0)
     respond = theModel(userInput)
     respond = np.argmax(respond.detach().numpy(), axis=2)
-    resStr = []
+    resBin = b''
     for c in respond[0]:
-        if c > 0:
-            resStr.append(chr(c))
-        else:
-            resStr.append('<EOG>')
-            break
-    print(''.join(resStr))
+        resBin += int(c).to_bytes(1, 'little')
+    try:
+        print(resBin.decode('utf-8'))
+    except:
+        print('Decode error')

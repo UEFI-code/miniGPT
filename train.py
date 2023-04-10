@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import dataset2 as dataset
-import tqdm
+from tqdm import tqdm
 
 trainingDevice = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
