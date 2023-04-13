@@ -30,7 +30,7 @@ optim = torch.optim.Adam(theModel.parameters(), lr=0.0001)
 optim.zero_grad()
 lossfunc = nn.CrossEntropyLoss()
 datar = dataset.DataWarpper(contextSize, '/storage/nfs/uefi/miniGPTDataset/')
-batchSize = 320
+batchSize = 64
 epoch = 128
 
 if trainingDevice.type == 'cuda':
@@ -65,6 +65,7 @@ for n in range(epoch):
             torch.save(theModel.state_dict(), 'model.pth')
     print('Epoch: {} Loss: {}'.format(n, loss.item()))
     torch.save(theModel.state_dict(), 'model.pth')
+    dater.__init__(contextSize, '/storage/nfs/uefi/miniGPTDataset/')
 
 while True:
     myStr = input('Enter a string: ')
