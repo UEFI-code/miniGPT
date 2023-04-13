@@ -1,4 +1,4 @@
-import ModelA
+import ModelB
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,7 +11,7 @@ class trickObj:
     bin_encoder = dataset2.DataWarpper.bin_encoder
 
 myDataPrep = trickObj()
-theModel = ModelA.myModel()
+theModel = ModelB.myModel()
 # model.pth maybe trained in parallel mode
 state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
 if 'module' in list(state_dict.keys())[0]:

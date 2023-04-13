@@ -1,4 +1,4 @@
-import ModelA
+import ModelB
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 trainingDevice = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-theModel = ModelA.myModel()
+theModel = ModelB.myModel()
 try:
     # model.pth maybe trained in parallel mode
     state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
@@ -30,7 +30,7 @@ optim = torch.optim.Adam(theModel.parameters(), lr=0.0001)
 optim.zero_grad()
 lossfunc = nn.CrossEntropyLoss()
 datar = dataset.DataWarpper(contextSize, '/storage/nfs/uefi/miniGPTDataset/')
-batchSize = 100
+batchSize = 320
 epoch = 128
 
 if trainingDevice.type == 'cuda':
@@ -60,7 +60,7 @@ for n in range(epoch):
             if 'illegal memory access' in str(e):
                 print('Restarting training')
                 exit(-1)
-        if (i + 1) % 100 == 0:
+        if (i + 1) % 10 == 0:
             print('\nEpoch: {} Batch: {} Loss: {}'.format(n, i, loss.item()))
             torch.save(theModel.state_dict(), 'model.pth')
     print('Epoch: {} Loss: {}'.format(n, loss.item()))

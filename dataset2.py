@@ -19,6 +19,8 @@ class DataWarpper():
                     self.totalBinSize += os.path.getsize(os.path.join(i[0], j))
         print('Total find files: {}'.format(len(self.file_list)))
         print('Total bin size: {}'.format(self.totalBinSize))
+        # shuffle file list
+        np.random.shuffle(self.file_list)
     
     def str_encoder(self, theStr):
         Context = []
