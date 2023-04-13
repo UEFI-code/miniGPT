@@ -65,7 +65,7 @@ for n in range(epoch):
             torch.save(theModel.state_dict(), 'model.pth')
     print('Epoch: {} Loss: {}'.format(n, loss.item()))
     torch.save(theModel.state_dict(), 'model.pth')
-    dater.__init__(contextSize, '/storage/nfs/uefi/miniGPTDataset/')
+    datar.__init__(contextSize, '/storage/nfs/uefi/miniGPTDataset/')
 
 while True:
     myStr = input('Enter a string: ')
