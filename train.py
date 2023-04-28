@@ -1,4 +1,5 @@
-import ModelB
+#import ModelB
+import BadTransformerLLM
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,7 +9,7 @@ from tqdm import tqdm
 
 trainingDevice = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-theModel = ModelB.myModel()
+theModel = BadTransformerLLM.myModel()
 try:
     # model.pth maybe trained in parallel mode
     state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
@@ -30,7 +31,7 @@ optim = torch.optim.Adam(theModel.parameters(), lr=0.0001)
 optim.zero_grad()
 lossfunc = nn.CrossEntropyLoss()
 datar = dataset.DataWarpper(contextSize, '/storage/nfs/uefi/miniGPTDataset/')
-batchSize = 64
+batchSize = 8
 epoch = 128
 
 if trainingDevice.type == 'cuda':
