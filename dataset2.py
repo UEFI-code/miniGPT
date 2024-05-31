@@ -59,7 +59,7 @@ class DataWarpper():
                     self.bin = self.bin_list[self.file_index]
                 else:
                     self.bin = open(self.file_list[self.file_index], 'rb').read()
-            source, target = self.bin_encoder(self.bin[:self.contextSize]) # This will NOT crash even if the file is too small
+            source, target = self.bin_encoder(self.bin[self.bin_p:self.bin_p+self.contextSize]) # This will NOT crash even if the file is too small
             sourceBatch.append(source)
             targetBatch.append(target)
             self.bin_p += self.contextSize
