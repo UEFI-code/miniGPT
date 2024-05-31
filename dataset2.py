@@ -80,16 +80,9 @@ class DataWarpper():
                         self.bin = self.bin_list[self.file_index]
                     else:
                         self.bin = open(self.file_list[self.file_index], 'rb').read()
-                    if len(self.bin) >= self.contextSize:
-                        # new file is big enough
-                        source, target = self.bin_encoder(self.bin[:self.contextSize])
-                        sourceBatch.append(source)
-                        targetBatch.append(target)
-                    else:
-                        # new file is too small
-                        source, target = self.bin_encoder(self.bin)
-                        sourceBatch.append(source)
-                        targetBatch.append(target)
+                    source, target = self.bin_encoder(self.bin[:self.contextSize]) # This will NOT crash even if the file is too small
+                    sourceBatch.append(source)
+                    targetBatch.append(target)
                     self.bin_p += self.contextSize
 
         return torch.tensor(sourceBatch, dtype=torch.float32) / 255, torch.tensor(targetBatch, dtype=torch.float32) / 255
