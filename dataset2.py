@@ -50,40 +50,25 @@ class DataWarpper():
         sourceBatch = []
         targetBatch = []
         for _ in range(batchSize):
-            if len(self.bin) - self.bin_p >= self.contextSize: # Can fullfill
-                #Buffer Ready
-                source, target = self.bin_encoder(self.bin[self.bin_p:self.bin_p + self.contextSize])
+            if len(self.bin) - self.bin_p > 0: # Load it!
+                source, target = self.bin_encoder(self.bin[self.bin_p:self.bin_p + self.contextSize]) # This will NOT crash even if the file is too small
                 sourceBatch.append(source)
                 targetBatch.append(target)
                 self.bin_p += self.contextSize
             else:
-                if len(self.bin) - self.bin_p > 0:
-                    #Read the rest of the buffer, then load new file
-                    source, target = self.bin_encoder(self.bin[self.bin_p:])
-                    sourceBatch.append(source)
-                    targetBatch.append(target)
-                    self.bin_p = 0
-                    self.file_index += 1
-                    self.file_index %= len(self.file_list)
-                    #print('Loading file: {}'.format(self.file_list[self.file_index]))
-                    if self.bigRAM:
-                        self.bin = self.bin_list[self.file_index]
-                    else:
-                        self.bin = open(self.file_list[self.file_index], 'rb').read()
+                #p out of buffer, load new file now
+                self.bin_p = 0
+                self.file_index += 1
+                self.file_index %= len(self.file_list)
+                #print('Loading file: {}'.format(self.file_list[self.file_index]))
+                if self.bigRAM:
+                    self.bin = self.bin_list[self.file_index]
                 else:
-                    #index out of buffer, load new file now
-                    self.bin_p = 0
-                    self.file_index += 1
-                    self.file_index %= len(self.file_list)
-                    #print('Loading file: {}'.format(self.file_list[self.file_index]))
-                    if self.bigRAM:
-                        self.bin = self.bin_list[self.file_index]
-                    else:
-                        self.bin = open(self.file_list[self.file_index], 'rb').read()
-                    source, target = self.bin_encoder(self.bin[:self.contextSize]) # This will NOT crash even if the file is too small
-                    sourceBatch.append(source)
-                    targetBatch.append(target)
-                    self.bin_p += self.contextSize
+                    self.bin = open(self.file_list[self.file_index], 'rb').read()
+                source, target = self.bin_encoder(self.bin[:self.contextSize]) # This will NOT crash even if the file is too small
+                sourceBatch.append(source)
+                targetBatch.append(target)
+                self.bin_p += self.contextSize
 
         return torch.tensor(sourceBatch, dtype=torch.float32) / 255, torch.tensor(targetBatch, dtype=torch.float32) / 255
 
