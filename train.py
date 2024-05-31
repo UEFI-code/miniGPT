@@ -62,9 +62,6 @@ for n in range(epoch):
             if 'illegal memory access' in str(e):
                 print('Restarting training')
                 exit(-1)
-        if (i + 1) % 10 == 0:
-            print('\nEpoch: {} Batch: {} Loss: {}'.format(n, i, loss.item()))
-            torch.save(theModel.state_dict(), 'model.pth')
     print('Epoch: {} Loss: {}'.format(n, loss.item()))
     torch.save(theModel.state_dict(), 'model.pth')
 
