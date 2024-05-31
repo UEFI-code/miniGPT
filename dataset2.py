@@ -10,7 +10,7 @@ class DataWarpper():
         self.contextSize = contextSize
         self.file_index = -1
         self.file_list = []
-        self.bin_index = 0
+        self.bin_p = 0
         self.bin = []
         self.totalBinSize = 0
         self.bigRAM = bigRAM
@@ -50,19 +50,19 @@ class DataWarpper():
         sourceBatch = []
         targetBatch = []
         for _ in range(batchSize):
-            if len(self.bin) - self.bin_index >= self.contextSize: # Can fullfill
+            if len(self.bin) - self.bin_p >= self.contextSize: # Can fullfill
                 #Buffer Ready
-                source, target = self.bin_encoder(self.bin[self.bin_index:self.bin_index + self.contextSize])
+                source, target = self.bin_encoder(self.bin[self.bin_p:self.bin_p + self.contextSize])
                 sourceBatch.append(source)
                 targetBatch.append(target)
-                self.bin_index += self.contextSize
+                self.bin_p += self.contextSize
             else:
-                if len(self.bin) - self.bin_index > 0:
+                if len(self.bin) - self.bin_p > 0:
                     #Read the rest of the buffer, then load new file
-                    source, target = self.bin_encoder(self.bin[self.bin_index:])
+                    source, target = self.bin_encoder(self.bin[self.bin_p:])
                     sourceBatch.append(source)
                     targetBatch.append(target)
-                    self.bin_index = 0
+                    self.bin_p = 0
                     self.file_index += 1
                     self.file_index %= len(self.file_list)
                     #print('Loading file: {}'.format(self.file_list[self.file_index]))
@@ -72,7 +72,7 @@ class DataWarpper():
                         self.bin = open(self.file_list[self.file_index], 'rb').read()
                 else:
                     #index out of buffer, load new file now
-                    self.bin_index = 0
+                    self.bin_p = 0
                     self.file_index += 1
                     self.file_index %= len(self.file_list)
                     #print('Loading file: {}'.format(self.file_list[self.file_index]))
@@ -90,7 +90,7 @@ class DataWarpper():
                         source, target = self.bin_encoder(self.bin)
                         sourceBatch.append(source)
                         targetBatch.append(target)
-                    self.bin_index += self.contextSize
+                    self.bin_p += self.contextSize
 
         return torch.tensor(sourceBatch, dtype=torch.float32) / 255, torch.tensor(targetBatch, dtype=torch.float32) / 255
 
