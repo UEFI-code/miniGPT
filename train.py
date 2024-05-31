@@ -75,7 +75,8 @@ while True:
         inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0).to(trainingDevice) / 255
         modelResponse = theModel(inputContext)
         theWord = chr((modelResponse[0] * 255).int())
-        print(theWord, end='', flush=True)
         if theWord == '\0':
             break
+        print(theWord, end='', flush=True)
         myStr += theWord
+    print('\n')
