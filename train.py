@@ -71,7 +71,7 @@ for n in range(epoch):
 while True:
     myStr = input('Enter a string: ')
     while len(myStr) < contextSize:
-        inputContext = datar.bin_encoder_infer((myStr.encode()))
+        inputContext = datar.bin_encoder_infer(myStr.encode())
         inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0).to(trainingDevice) / 255
         modelResponse = theModel(inputContext)
         theWord = chr((modelResponse[0] * 255).int())
