@@ -50,7 +50,7 @@ class DataWarpper():
         sourceBatch = []
         targetBatch = []
         for _ in range(batchSize):
-            if not len(self.bin) - self.bin_p > 0: # No leaving data in buffer
+            while not len(self.bin) - self.bin_p > 0: # No leaving data in buffer
                 self.bin_p = 0
                 self.file_index += 1
                 self.file_index %= len(self.file_list)
