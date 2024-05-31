@@ -1,18 +1,17 @@
-# import ModelB
-import BadTransformerLLM
+import Model
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import dataset2
 
-class trickObj:
-    contextSize = 1024
-    str_encoder = dataset2.DataWarpper.str_encoder
-    bin_encoder = dataset2.DataWarpper.bin_encoder
+class trickCls: # Trick DataWarpper.bin_encoder_infer to work
+    contextSize = 128
 
-myDataPrep = trickObj()
-theModel = BadTransformerLLM.myModel()
+contextSize = trickCls.contextSize
+
+theModel = Model.myModel(contextSize=contextSize)
+
 # model.pth maybe trained in parallel mode
 state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
 if 'module' in list(state_dict.keys())[0]:
@@ -27,37 +26,21 @@ else:
     print('Model resumed from Normal checkpoint')
 
 testStr = 'Hello World'
-# testStr = [ord(c) for c in testStr]
-# testStr = torch.tensor(testStr, dtype=torch.long)
-# testStr = testStr.unsqueeze(0)
-exp, testStr = myDataPrep.str_encoder(testStr)
-print(exp)
-print(testStr)
-testStr = torch.tensor(testStr, dtype=torch.long)
-testStr = testStr.unsqueeze(0)
+testStr = dataset2.DataWarpper.bin_encoder_infer(trickCls, testStr.encode())
+testStr = torch.tensor(testStr, dtype=torch.float32).unsqueeze(0) / 255
 respond = theModel(testStr)
-respond = np.argmax(respond.detach().numpy(), axis=2)
 print(respond)
-resBin = b''
-for c in respond[0]:
-    resBin += int(c).to_bytes(1, 'little')
-print(resBin)
-try:
-    print(resBin.decode('utf-8'))
-except:
-    print('Decode error')
+theWord = chr((respond[0] * 255).int())
+print(theWord)
 
 while True:
-    userInput = input('Enter a string: ').encode('utf-8')
-    userInput, _ = myDataPrep.bin_encoder(userInput)
-    userInput = torch.tensor(userInput, dtype=torch.long)
-    userInput = userInput.unsqueeze(0)
-    respond = theModel(userInput)
-    respond = np.argmax(respond.detach().numpy(), axis=2)
-    resBin = b''
-    for c in respond[0]:
-        resBin += int(c).to_bytes(1, 'little')
-    try:
-        print(resBin.decode('utf-8'))
-    except:
-        print('Decode error')
+    myStr = input('Enter a string: ')
+    while len(myStr) < contextSize:
+        inputContext = dataset2.DataWarpper.bin_encoder_infer(trickCls, myStr.encode())
+        inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0) / 255
+        modelResponse = theModel(inputContext)
+        theWord = chr((modelResponse[0] * 255).int())
+        print(theWord, end='', flush=True)
+        if theWord == '\0':
+            break
+        myStr += theWord
