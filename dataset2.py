@@ -30,6 +30,12 @@ class DataWarpper():
             source += [0xFF] * (self.contextSize - len(source))
         return source, target
     
+    def bin_encoder_infer(self, theBin):
+        source = list(theBin)
+        if len(source) < self.contextSize:
+            source += [0xFF] * (self.contextSize - len(source))
+        return source
+    
     def makeBatch(self, batchSize):
         sourceBatch = []
         targetBatch = []
