@@ -1,15 +1,21 @@
-#import ModelB
-import BadTransformerLLM
+import Model
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import dataset2 as dataset
 from tqdm import tqdm
+import gpu_chooser
 
-trainingDevice = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+contextSize = 128
+batchSize = 8
+epoch = 128
+datar = dataset.DataWarpper(contextSize, './')
 
-theModel = BadTransformerLLM.myModel()
+trainingDevice = gpu_chooser.choose_gpu()
+
+theModel = Model.myModel(contextSize)
+
 try:
     # model.pth maybe trained in parallel mode
     state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
@@ -26,30 +32,25 @@ try:
 except:
     print('No model checkpoint found, start training from scratch')
     pass
-contextSize = 1024
-optim = torch.optim.Adam(theModel.parameters(), lr=0.0001)
-optim.zero_grad()
-lossfunc = nn.CrossEntropyLoss()
-datar = dataset.DataWarpper(contextSize, '/storage/nfs/uefi/miniGPTDataset/')
-batchSize = 8
-epoch = 128
+
+theModel = theModel.to(trainingDevice)
+
+optim = torch.optim.Adam(theModel.parameters(), lr=0.001)
+
+lossfunc = nn.L1Loss()
 
 if trainingDevice.type == 'cuda':
-    print('Using GPU')
-    theModel = theModel.cuda()
-    # Enable Data Parallelism
     theModel = nn.DataParallel(theModel)
 
 for n in range(epoch):
     for i in tqdm(range(datar.totalBinSize // (contextSize * batchSize))):
         optim.zero_grad()
-        target, source = datar.makeBatch(batchSize)
+        source, target = datar.makeBatch(batchSize)
         #print(inputContext)
-        if trainingDevice.type == 'cuda':
-            target = target.cuda()
-            source = source.cuda()
+        source = source.to(trainingDevice)
+        target = target.to(trainingDevice)
         try:
-            modelResponse = theModel(source).permute(0, 2, 1)
+            modelResponse = theModel(source)
             #print(modelResponse.shape)
             # print(inputContext.shape)
             loss = lossfunc(modelResponse, target)
@@ -66,32 +67,15 @@ for n in range(epoch):
             torch.save(theModel.state_dict(), 'model.pth')
     print('Epoch: {} Loss: {}'.format(n, loss.item()))
     torch.save(theModel.state_dict(), 'model.pth')
-    datar.__init__(contextSize, '/storage/nfs/uefi/miniGPTDataset/')
 
 while True:
     myStr = input('Enter a string: ')
-    inputContext, _ = datar.str_encoder(myStr)
-    inputContext = torch.tensor(inputContext, dtype=torch.long)
-    inputContext = inputContext.unsqueeze(0)
-    if trainingDevice.type == 'cuda':
-        inputContext = inputContext.cuda()
-    rtContext = inputContext
-    i = len(myStr)
-    for _ in range(i, contextSize):
-        modelResponse = theModel(rtContext)
-        modelResponse = np.argmax(modelResponse.cpu().detach().numpy(), axis=2)
-        if modelResponse[0][i] == 0:
+    while len(myStr) < contextSize:
+        inputContext = datar.bin_encoder_infer((myStr.encode()))
+        inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0).to(trainingDevice) / 255
+        modelResponse = theModel(inputContext)
+        theWord = chr((modelResponse[0] * 255).int())
+        print(theWord, end='', flush=True)
+        if theWord == '\0':
             break
-        modelResponse[0][i+1:] = 0
-        rtContext = torch.tensor(modelResponse, dtype=torch.long).to(trainingDevice)
-        i += 1
-    
-    resStr = []
-    for c in rtContext[0]:
-        c = int(c.item())
-        if c > 0:
-            resStr.append(chr(c))
-        else:
-            resStr.append('<EOG>')
-            break
-    print(''.join(resStr))
+        myStr += theWord
