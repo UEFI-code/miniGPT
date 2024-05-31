@@ -1,8 +1,6 @@
 import Model
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
 import dataset2 as dataset
 from tqdm import tqdm
 import gpu_chooser
@@ -10,7 +8,7 @@ import gpu_chooser
 contextSize = 128
 batchSize = 8
 epoch = 8192
-learning_rate = 5e-4
+learning_rate = 5e-5
 
 datar = dataset.DataWarpper(contextSize, './')
 
