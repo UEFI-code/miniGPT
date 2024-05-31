@@ -50,7 +50,7 @@ class DataWarpper():
         sourceBatch = []
         targetBatch = []
         for _ in range(batchSize):
-            while not len(self.bin) - self.bin_p > 0: # No leaving data in buffer
+            while not len(self.bin) - self.bin_p > 0: # No leaving data in buffer, seek next non-empty file
                 self.bin_p = 0
                 self.file_index += 1
                 self.file_index %= len(self.file_list)
@@ -59,11 +59,11 @@ class DataWarpper():
                     self.bin = self.bin_list[self.file_index]
                 else:
                     self.bin = open(self.file_list[self.file_index], 'rb').read()
-            source, target = self.bin_encoder(self.bin[self.bin_p:self.bin_p+self.contextSize]) # This will NOT crash even if the file is too small
+            source, target = self.bin_encoder(self.bin[self.bin_p:self.bin_p + self.contextSize]) # This will NOT crash even if the file is too small
             sourceBatch.append(source)
             targetBatch.append(target)
             self.bin_p += self.contextSize
-
+            
         return torch.tensor(sourceBatch, dtype=torch.float32) / 255, torch.tensor(targetBatch, dtype=torch.float32) / 255
 
 if __name__ == '__main__':
