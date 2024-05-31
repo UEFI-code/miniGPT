@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import os
+import random
 
 class DataWarpper():
     def __init__(self, contextSize, folderpath):
@@ -22,8 +23,11 @@ class DataWarpper():
         # shuffle file list
         np.random.shuffle(self.file_list)
     
-    def bin_encoder(self, theBin):
+    def bin_encoder(self, theBin, randomCut=True):
         source = list(theBin)
+        if randomCut:
+            pos = random.randint(2, len(source)) # leaving 2 bytes as least, one byte as input and another is masked
+            source = source[:pos]
         target = source[-1:]
         source[-1] = 0xFF # Mask the target value
         if len(source) < self.contextSize:
