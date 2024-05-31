@@ -1,0 +1,12 @@
+cff-version: 1.0.0
+message: If you use this software, please cite it as below.
+title: miniGPT
+authors:
+  - family-names: miniGPT Team
+url: https://github.com/UEFI-code/miniGPT
+preferred-citation:
+  type: opensource-software-toolkit
+  title: "miniGPT: An open-source project to show how to build a mini language model using PyTorch."
+  authors:
+    - family-names: Zhang
+      given-names: Shizhuo
