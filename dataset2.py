@@ -22,62 +22,30 @@ class DataWarpper():
         # shuffle file list
         np.random.shuffle(self.file_list)
     
-    def str_encoder(self, theStr):
-        Context = []
-        for i in range(len(theStr)):
-            if i < self.contextSize:
-                Context.append(ord(theStr[i]))
-            else:
-                break
-        if len(Context) < self.contextSize:
-            Context += [0] * (self.contextSize - len(Context))
-        
-        Context2 = []
-        for i in range(len(theStr) - 1):
-            if i < self.contextSize:
-                Context2.append(ord(theStr[i]))
-            else:
-                break
-        if len(Context2) < self.contextSize:
-            Context2 += [0] * (self.contextSize - len(Context2))
-        return Context, Context2
-    
     def bin_encoder(self, theBin):
-        Context = []
-        for i in range(len(theBin)):
-            if i < self.contextSize:
-                Context.append(theBin[i])
-            else:
-                break
-        if len(Context) < self.contextSize:
-            Context += [0] * (self.contextSize - len(Context))
-        
-        Context2 = []
-        for i in range(len(theBin) - 1):
-            if i < self.contextSize:
-                Context2.append(theBin[i])
-            else:
-                break
-        if len(Context2) < self.contextSize:
-            Context2 += [0] * (self.contextSize - len(Context2))
-        return Context, Context2
+        source = list(theBin)
+        target = source[-1:]
+        source[-1] = 0xFF # Mask the target value
+        if len(source) < self.contextSize:
+            source += [0xFF] * (self.contextSize - len(source))
+        return source, target
     
     def makeBatch(self, batchSize):
-        batch = []
-        batch2 = []
+        sourceBatch = []
+        targetBatch = []
         for _ in range(batchSize):
             if len(self.bin) - self.bin_index >= self.contextSize:
                 #Buffer Ready
-                context, context2 = self.bin_encoder(self.bin[self.bin_index:self.bin_index + self.contextSize])
-                batch.append(context)
-                batch2.append(context2)
+                source, target = self.bin_encoder(self.bin[self.bin_index:self.bin_index + self.contextSize])
+                sourceBatch.append(source)
+                targetBatch.append(target)
                 self.bin_index += self.contextSize
             else:
                 if len(self.bin) - self.bin_index > 0:
                     #Read the rest of the buffer, then load new file
-                    context, context2 = self.bin_encoder(self.bin[self.bin_index:])
-                    batch.append(context)
-                    batch2.append(context2)
+                    source, target = self.bin_encoder(self.bin[self.bin_index:])
+                    sourceBatch.append(source)
+                    targetBatch.append(target)
                     self.bin_index = 0
                     self.file_index += 1
                     self.file_index %= len(self.file_list)
@@ -92,18 +60,18 @@ class DataWarpper():
                     self.bin = open(self.file_list[self.file_index], 'rb').read()
                     if len(self.bin) >= self.contextSize:
                         # new file is big enough
-                        context, context2 = self.bin_encoder(self.bin[:self.contextSize])
-                        batch.append(context)
-                        batch2.append(context2)
+                        source, target = self.bin_encoder(self.bin[:self.contextSize])
+                        sourceBatch.append(source)
+                        targetBatch.append(target)
                     else:
                         # new file is too small
-                        context, context2 = self.bin_encoder(self.bin)
-                        batch.append(context)
-                        batch2.append(context2)
+                        source, target = self.bin_encoder(self.bin)
+                        sourceBatch.append(source)
+                        targetBatch.append(target)
                     self.bin_index += self.contextSize
 
-        return torch.tensor(batch, dtype=torch.long), torch.tensor(batch2, dtype=torch.long)
+        return torch.tensor(sourceBatch, dtype=torch.float32) / 255, torch.tensor(targetBatch, dtype=torch.float32) / 255
 
 if __name__ == '__main__':
-    dataset = DataWarpper(256, './')
-    print(dataset.makeBatch(10))
+    dataset = DataWarpper(8, './')
+    print(dataset.makeBatch(4))
