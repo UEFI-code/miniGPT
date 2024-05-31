@@ -6,13 +6,14 @@ import os
 import random
 
 class DataWarpper():
-    def __init__(self, contextSize, folderpath):
+    def __init__(self, contextSize, folderpath, bigRAM = True):
         self.contextSize = contextSize
         self.file_index = -1
         self.file_list = []
         self.bin_index = 0
         self.bin = []
         self.totalBinSize = 0
+        self.bigRAM = bigRAM
         for i in os.walk(folderpath):
             for j in i[2]:
                 if j.endswith('.py') or j.endswith('.txt'):
@@ -22,6 +23,11 @@ class DataWarpper():
         print('Total bin size: {}'.format(self.totalBinSize))
         # shuffle file list
         np.random.shuffle(self.file_list)
+        if self.bigRAM:
+            print('Wow Big RAM')
+            self.bin_list = []
+            for f in self.file_list:
+                self.bin_list.append(open(f, 'rb').read())
     
     def bin_encoder(self, theBin, randomCut=True):
         source = list(theBin)
@@ -44,7 +50,7 @@ class DataWarpper():
         sourceBatch = []
         targetBatch = []
         for _ in range(batchSize):
-            if len(self.bin) - self.bin_index >= self.contextSize:
+            if len(self.bin) - self.bin_index >= self.contextSize: # Can fullfill
                 #Buffer Ready
                 source, target = self.bin_encoder(self.bin[self.bin_index:self.bin_index + self.contextSize])
                 sourceBatch.append(source)
@@ -59,15 +65,21 @@ class DataWarpper():
                     self.bin_index = 0
                     self.file_index += 1
                     self.file_index %= len(self.file_list)
-                    print('Loading file: {}'.format(self.file_list[self.file_index]))
-                    self.bin = open(self.file_list[self.file_index], 'rb').read()
+                    #print('Loading file: {}'.format(self.file_list[self.file_index]))
+                    if self.bigRAM:
+                        self.bin = self.bin_list[self.file_index]
+                    else:
+                        self.bin = open(self.file_list[self.file_index], 'rb').read()
                 else:
                     #index out of buffer, load new file now
                     self.bin_index = 0
                     self.file_index += 1
                     self.file_index %= len(self.file_list)
-                    print('Loading file: {}'.format(self.file_list[self.file_index]))
-                    self.bin = open(self.file_list[self.file_index], 'rb').read()
+                    #print('Loading file: {}'.format(self.file_list[self.file_index]))
+                    if self.bigRAM:
+                        self.bin = self.bin_list[self.file_index]
+                    else:
+                        self.bin = open(self.file_list[self.file_index], 'rb').read()
                     if len(self.bin) >= self.contextSize:
                         # new file is big enough
                         source, target = self.bin_encoder(self.bin[:self.contextSize])
