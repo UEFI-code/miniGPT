@@ -8,7 +8,7 @@ import gpu_chooser
 contextSize = 128
 batchSize = 8
 epoch = 8192
-learning_rate = 5e-5
+learning_rate, weight_decay = 5e-5, 1e-5
 
 datar = dataset.DataWarpper(contextSize, './')
 
@@ -35,7 +35,7 @@ except:
 
 theModel = theModel.to(trainingDevice)
 
-optim = torch.optim.Adam(theModel.parameters(), lr=learning_rate)
+optim = torch.optim.Adam(theModel.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
 lossfunc = nn.L1Loss()
 
