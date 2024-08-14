@@ -37,7 +37,7 @@ while True:
     myStr = input('Enter a string: ')
     while len(myStr) < contextSize:
         inputContext = dataset2.DataWarpper.bin_encoder_infer(trickCls, myStr.encode())
-        inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0) / 255
+        inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0) / 2048 + 0.5
         modelResponse = theModel(inputContext)
         theWord = chr(((modelResponse[0] - 0.5) * 2048).int())
         if theWord == '\0':
