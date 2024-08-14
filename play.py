@@ -39,7 +39,7 @@ while True:
         inputContext = dataset2.DataWarpper.bin_encoder_infer(trickCls, myStr.encode())
         inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0) / 255
         modelResponse = theModel(inputContext)
-        theWord = chr((modelResponse[0] * 255).int())
+        theWord = chr(((modelResponse[0] - 0.5) * 2048).int())
         if theWord == '\0':
             break
         print(theWord, end='', flush=True)

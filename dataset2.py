@@ -64,7 +64,7 @@ class DataWarpper():
             targetBatch.append(target)
             self.bin_p += self.contextSize
             
-        return torch.tensor(sourceBatch, dtype=torch.float32) / 255, torch.tensor(targetBatch, dtype=torch.float32) / 255
+        return torch.tensor(sourceBatch, dtype=torch.float32) / 2048 + 0.5, torch.tensor(targetBatch, dtype=torch.float32) / 2048 + 0.5
 
 if __name__ == '__main__':
     dataset = DataWarpper(8, './')
