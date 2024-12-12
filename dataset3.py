@@ -41,7 +41,9 @@ class DataWarpper():
                     self.bin = self.bin_list[self.file_index]
                 else:
                     self.bin = open(self.file_list[self.file_index], 'rb').read()
-            sourceBatch.append(self.bin[self.bin_p:self.bin_p + self.contextSize])
+            sourceBatch.append(list(self.bin[self.bin_p:self.bin_p + self.contextSize]))
+            if len(sourceBatch[-1]) < self.contextSize:
+                sourceBatch[-1] += [0xFF] * (self.contextSize - len(sourceBatch[-1]))
             self.bin_p += self.contextSize
             
         return torch.tensor(sourceBatch, dtype=torch.float32) / 2048 + 0.5
