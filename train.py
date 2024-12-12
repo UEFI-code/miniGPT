@@ -7,7 +7,7 @@ import gpu_chooser
 
 contextSize = 128
 batchSize = 8
-epoch = 8192
+epoch = 128
 learning_rate, weight_decay = 5e-5, 1e-5
 
 datar = dataset.DataWarpper(contextSize, './')
@@ -69,9 +69,9 @@ while True:
     myStr = input('Enter a string: ')
     while len(myStr) < contextSize:
         inputContext = datar.bin_encoder_infer(myStr.encode())
-        inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0).to(trainingDevice) / 255
+        inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0).to(trainingDevice) / 2048 + 0.5
         modelResponse = theModel(inputContext)
-        theWord = chr((modelResponse[0] * 255).int())
+        theWord = chr(((modelResponse[0] - 0.5) * 2048).int())
         if theWord == '\0':
             break
         print(theWord, end='', flush=True)
