@@ -2,13 +2,11 @@ import Model2 as Model
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-import dataset2
-
-
 contextSize = 128
 
-theModel = Model.myModel(contextSize=contextSize)
+STAGE = 4
+
+theModel = Model.myModel()
 
 # model.pth maybe trained in parallel mode
 state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
@@ -26,10 +24,11 @@ else:
 testStr = 'Hello World'
 testStr = list(testStr.encode())
 testStr = torch.tensor(testStr, dtype=torch.float32).unsqueeze(0) / 255
-respond = theModel(testStr)[0]
+print(testStr)
+respond = theModel(testStr, STAGE)[0]
 print(respond)
 for i in respond:
-    print(chr((i * 255).int()), end='')
+    print(chr((i * 256).int()), end='')
 print('-----------------')
 
 while True:
@@ -37,8 +36,8 @@ while True:
     while len(myStr) < contextSize:
         inputContext = list(myStr.encode())
         inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0) / 255
-        modelResponse = theModel(inputContext)[0]
-        theWord = chr((modelResponse[-1] * 255).int())
+        modelResponse = theModel(inputContext, STAGE)[0]
+        theWord = chr((modelResponse[-1] * 256).int())
         if theWord == '\0':
             break
         print(theWord, end='', flush=True)

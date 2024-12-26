@@ -6,15 +6,17 @@ from tqdm import tqdm
 import gpu_chooser
 
 contextSize = 128
-batchSize = 8
-epoch = 1024
-learning_rate, weight_decay = 0.001, 0
+batchSize = 128
+epoch = 20000
+learning_rate, weight_decay = 5e-6, 1e-7
 
 datar = dataset.DataWarpper(contextSize, './')
 
 trainingDevice = gpu_chooser.choose_gpu()
 
-theModel = Model.myModel(contextSize)
+theModel = Model.myModel()
+
+STAGE = 2
 
 try:
     # model.pth maybe trained in parallel mode
@@ -35,7 +37,10 @@ except:
 
 theModel = theModel.to(trainingDevice)
 
-optim = torch.optim.Adam(theModel.parameters(), lr=learning_rate, weight_decay=weight_decay)
+if STAGE == 0:
+    optim = torch.optim.Adam(list(theModel.encoder.parameters()) + list(theModel.decoder.parameters()), lr=learning_rate, weight_decay=weight_decay)
+else:
+    optim = torch.optim.Adam(theModel.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
 lossfunc = nn.L1Loss()
 
@@ -45,14 +50,16 @@ if trainingDevice.type == 'cuda':
 for n in range(epoch):
     for i in tqdm(range(datar.totalBinSize // (contextSize * batchSize))):
         optim.zero_grad()
-        source = datar.makeBatch(batchSize)
+        source, target = datar.makeBatch(batchSize)
         #print(inputContext)
         source = source.to(trainingDevice)
+        target = target.to(trainingDevice)
         try:
-            modelResponse = theModel(source)
+            modelResponse = theModel(source, STAGE)
+            #print(modelResponse)
             #print(modelResponse.shape)
             # print(inputContext.shape)
-            loss = lossfunc(modelResponse, source)
+            loss = lossfunc(modelResponse, target) if STAGE > 0 else lossfunc(modelResponse, source)
             loss.backward()
             optim.step()
         except RuntimeError as e:
@@ -62,18 +69,19 @@ for n in range(epoch):
                 print('Restarting training')
                 exit(-1)
     print('Epoch: {} Loss: {}'.format(n, loss.item()))
-    torch.save(theModel.state_dict(), 'model.pth')
+    if n % 1000 == 999:
+        torch.save(theModel.state_dict(), 'model.pth')
 
 while True:
     myStr = input('Enter a string: ')
     while len(myStr) < contextSize:
         inputContext = list(myStr.encode('utf-8'))
         inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0).to(trainingDevice) / 255
-        modelResponse = theModel(inputContext)[0]
+        modelResponse = theModel(inputContext, STAGE)[0]
         for i in modelResponse:
-            print(chr((i * 255).int()), end='', flush=True)
+            print(chr((i * 256).int()), end='', flush=True)
         print()
-        theWord = chr((modelResponse[-1] * 255).int())
+        theWord = chr((modelResponse[-1] * 256).int())
         if theWord == '\0':
             break
         #print(theWord, end='', flush=True)
