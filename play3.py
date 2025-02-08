@@ -4,25 +4,32 @@ import torch.nn as nn
 import torch.nn.functional as F
 contextSize = 128
 
-STAGE = 4
+STAGE = 1
 
 theModel = Model.myModel()
 
-# model.pth maybe trained in parallel mode
-state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
-if 'module' in list(state_dict.keys())[0]:
-    new_state_dict = {}
-    for k, v in state_dict.items():
-        name = k[7:]
-        new_state_dict[name] = v
-    theModel.load_state_dict(new_state_dict)
-    print('Model resumed from Parallel checkpoint')
-else:
-    theModel.load_state_dict(state_dict)
-    print('Model resumed from Normal checkpoint')
+try:
+    theModel.encoder.load_state_dict(torch.load('model_encoder.pth'))
+    print('Model resumed from encoder checkpoint')
+except:
+    print('No encoder checkpoint found, start training from scratch')
+    pass
+try :
+    theModel.decoder.load_state_dict(torch.load('model_decoder.pth'))
+    print('Model resumed from decoder checkpoint')
+except:
+    print('No decoder checkpoint found, start training from scratch')
+    pass
+try:
+    theModel.transform_blocks.load_state_dict(torch.load('model_transform_blocks.pth'))
+    print('Model resumed from transform_blocks checkpoint')
+except:
+    print('No transform_blocks checkpoint found, start training from scratch')
+    pass
 
 testStr = 'Hello World'
 testStr = list(testStr.encode())
+testStr[-1] = -128
 testStr = torch.tensor(testStr, dtype=torch.float32).unsqueeze(0) / 255
 print(testStr)
 respond = theModel(testStr, STAGE)[0]
@@ -35,6 +42,7 @@ while True:
     myStr = input('Enter a string: ')
     while len(myStr) < contextSize:
         inputContext = list(myStr.encode())
+        inputContext[-1] = -128
         inputContext = torch.tensor(inputContext, dtype=torch.float32).unsqueeze(0) / 255
         modelResponse = theModel(inputContext, STAGE)[0]
         theWord = chr((modelResponse[-1] * 256).int())

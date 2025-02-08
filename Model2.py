@@ -19,34 +19,22 @@ class BadTransformerBlockHead(nn.Module):
         return x
     
 class BadTransformerBlockMiddle(nn.Module):
-    def __init__(self, emb_dim = 512, deepth = 3, activate_func_cls = nn.PReLU) -> None:
+    def __init__(self, emb_dim = 512, deepth = 1, activate_func_cls = nn.PReLU) -> None:
         super().__init__()
-        # self.encoders = nn.Sequential()
         self.decoders = nn.Sequential()
-        # for _ in range(deepth):
-        #     self.encoders.append(nn.Linear(emb_dim, emb_dim))
-        #     self.encoders.append(activate_func_cls())
-        
         for i in range(deepth):
-            if i == 0:
-                self.decoders.append(nn.Linear(emb_dim * 2, emb_dim))
+            if i == deepth - 1:
+                self.decoders.append(nn.Linear(2 * emb_dim, emb_dim))
             else:
-                self.decoders.append(nn.Linear(emb_dim, emb_dim))
+                self.decoders.append(nn.Linear(2 * emb_dim, 2 * emb_dim))
             self.decoders.append(activate_func_cls())
-        
-        # self.badTransformerAdapterA = nn.Linear(emb_dim, emb_dim)
-        # self.badTransformerAdapterB = nn.Linear(emb_dim, emb_dim)
-        # self.badTransformerAdapterC = nn.Linear(emb_dim, emb_dim)
     
     def forward(self, x):
-        # x = self.encoders(x)
-        # xA = self.badTransformerAdapterA(x)
-        # xB = self.badTransformerAdapterB(x)
-        # xC = self.badTransformerAdapterC(x)
-        matrix = torch.matmul(x, x.transpose(1, 2)) / x.size(2)
-        matrix = torch.matmul(matrix, x) / x.size(1)
-        x = self.decoders(torch.cat([x, matrix], dim=2))
-        return x
+        x_normed = x / (x.norm(dim=1, keepdim=True) + 1e-6)
+        matrix = torch.matmul(x_normed.transpose(1, 2), x_normed)
+        #print(matrix)
+        matrix = torch.matmul(x_normed, matrix)
+        return self.decoders(torch.cat([x, matrix], dim=2)) # make decoder can learn routing
 
 class BadTransformerBlockTail(nn.Module):
     def __init__(self, emb_dim = 512, deepth = 3, activate_func_cls = nn.PReLU) -> None:
@@ -65,14 +53,14 @@ class BadTransformerBlockTail(nn.Module):
         return x
 
 class myModel(nn.Module):
-    def __init__(self, deepth = 64) -> None:
+    def __init__(self, deepth = 64, dim=128) -> None:
         super().__init__()
-        self.encoder = BadTransformerBlockHead(emb_dim=1024, activate_func_cls=nn.ReLU)
-        self.decoder = BadTransformerBlockTail(emb_dim=1024, activate_func_cls=nn.ReLU)
+        self.encoder = BadTransformerBlockHead(emb_dim=dim, activate_func_cls=nn.ReLU)
+        self.decoder = BadTransformerBlockTail(emb_dim=dim, activate_func_cls=nn.ReLU)
 
         self.transform_blocks = nn.Sequential()
         for _ in range(deepth):
-            self.transform_blocks.append(BadTransformerBlockMiddle(emb_dim=1024, activate_func_cls=nn.ReLU))
+            self.transform_blocks.append(BadTransformerBlockMiddle(emb_dim=dim, activate_func_cls=nn.ReLU))
     
     def forward(self, x, stage = 0):
         x = self.encoder(x)
@@ -86,4 +74,4 @@ if __name__ == '__main__':
     # random model parameters
     # for p in model.parameters():
     #     p.data = torch.rand_like(p)
-    print(model(torch.rand(1, 16), 4))
+    print(model(torch.rand(1, 4), 2))
