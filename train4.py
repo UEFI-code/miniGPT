@@ -57,3 +57,13 @@ for n in range(epoch):
         
     print('Epoch: {} Loss: {}'.format(n, loss.item()))
     torch.save(theModel.state_dict(), 'model.pth')
+
+test_batch, _ = datar.makeBatch(1)
+test_batch = test_batch.to(trainingDevice)
+while True:
+    modelResponse = theModel(test_batch)
+    theWord = chr(int(modelResponse[-1].item() * 256))
+    if theWord == '\0':
+        break
+    print(theWord, end='', flush=True)
+    test_batch = torch.cat((test_batch[:, 1:], modelResponse), dim=1)
