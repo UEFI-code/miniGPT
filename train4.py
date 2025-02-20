@@ -8,8 +8,8 @@ import time
 
 contextSize = 128
 batchSize = 256
-epoch = 8192
-learning_rate, weight_decay = 5e-4, 1e-5
+epoch = 50000
+learning_rate, weight_decay = 1e-4, 1e-5
 
 datar = dataset.DataWarpper(contextSize, './')
 

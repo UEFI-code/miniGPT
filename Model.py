@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 class myBadTransfomerBlock(nn.Module):
-    def __init__(self, dim=64, deepth = 2, activation=nn.ReLU(), debug=False):
+    def __init__(self, max_seq_len=128, dim=64, deepth=2, activation=nn.ReLU(), debug=False):
         super().__init__()
+        self.positionEmbedding = nn.Parameter(torch.randn(1, max_seq_len, dim), requires_grad=True)
         self.encodingGroup = nn.Sequential()
         self.decodingGroup = nn.Sequential()
         for _ in range(deepth):
@@ -14,7 +15,8 @@ class myBadTransfomerBlock(nn.Module):
         self.dim = dim
 
     def forward(self, x):
-        y = self.encodingGroup(x) # batch, seq, dim
+        y = x + self.positionEmbedding[:, :x.size(1)]
+        y = self.encodingGroup(y) # batch, seq, dim
         y = y / (y.norm(dim=-1, keepdim=True) + 1e-6)
         cmp_matrix = torch.matmul(y, y.transpose(1, 2)) # batch, seq, seq
         if self.debug:
@@ -23,20 +25,18 @@ class myBadTransfomerBlock(nn.Module):
         return self.decodingGroup(y)
 
 class myModel(nn.Module):
-    def __init__(self, embeddingDim = 512, embeddingDeepth = 3, num_layers=2, max_seq_len = 128, debug=False):
+    def __init__(self, max_seq_len = 128, embeddingDim = 512, embeddingDeepth = 3, num_layers=2, debug=False):
         super().__init__()
-        
         self.pre_embedding = nn.Sequential(
             nn.Linear(1, embeddingDim),
             nn.ReLU(),
             nn.Linear(embeddingDim, embeddingDim),
             nn.ReLU()
         )
-        self.positinalEncoding = nn.Parameter(torch.randn(1, max_seq_len, embeddingDim), requires_grad=True)
-
+        
         self.badtrans = nn.Sequential()
         for _ in range(num_layers):
-            self.badtrans.append(myBadTransfomerBlock(dim=embeddingDim, deepth=embeddingDeepth, debug=debug))
+            self.badtrans.append(myBadTransfomerBlock(dim=embeddingDim, deepth=embeddingDeepth, max_seq_len=max_seq_len, debug=debug))
         
         self.windup = nn.Sequential(
             nn.Linear(embeddingDim, embeddingDim),
@@ -47,7 +47,6 @@ class myModel(nn.Module):
 
     def forward(self, x):
         x = self.pre_embedding(x)
-        x = x + self.positinalEncoding[:, :x.size(1)]
         x = self.badtrans(x)
         x = self.windup(x)
         return x
