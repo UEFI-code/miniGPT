@@ -1,30 +1,61 @@
 import torch
 import torch.nn as nn
-
-class myModel(nn.Module):
-    def __init__(self, contextSize, emb_dim = 2048, deepth = 3, activate_func_cls = nn.ReLU) -> None:
+class myBadTransfomerBlock(nn.Module):
+    def __init__(self, dim=64, deepth = 2, max_seq_len = 128, activation=nn.ReLU(), debug=False):
         super().__init__()
-        self.encoders = nn.Sequential()
-        self.decoders = nn.Sequential()
-        for i in range(deepth):
-            if i == 0:
-                self.encoders.append(nn.Linear(contextSize, emb_dim))
-            else:
-                self.encoders.append(nn.Linear(emb_dim, emb_dim))
-            self.encoders.append(activate_func_cls())
         
-        for i in range(deepth):
-            if i == deepth - 1:
-                self.decoders.append(nn.Linear(emb_dim, 1))
-            else:
-                self.decoders.append(nn.Linear(emb_dim, emb_dim))
-                self.decoders.append(activate_func_cls())
+        self.encodingGroupA = nn.Sequential()
+        self.decodingGroup = nn.Sequential()
+        for _ in range(deepth):
+            self.encodingGroupA.append(nn.Linear(dim, dim, bias=False))
+            self.encodingGroupA.append(activation)
+            self.decodingGroup.append(nn.Linear(dim, dim, bias=False))
+            self.decodingGroup.append(activation)
+        self.debug = debug
+        self.dim = dim
 
     def forward(self, x):
-        x = self.encoders(x)
-        x = self.decoders(x)
+        x = self.encodingGroupA(x) # batch, seq, dim
+        x = x / (x.norm(dim=-1, keepdim=True) + 1e-6)
+        cmp_matrix = torch.matmul(x, x.transpose(1, 2)) # batch, seq, seq
+        if self.debug:
+            print(f'Debug: {cmp_matrix}')
+        x = torch.matmul(cmp_matrix, x) # this step is hybird token's knowledge
+        return self.decodingGroup(x)
+
+class myModel(nn.Module):
+    def __init__(self, embeddingDim = 512, embeddingDeepth = 3, num_layers=3, max_seq_len = 128, debug=False):
+        super().__init__()
+        
+        self.pre_embedding = nn.Sequential(
+            nn.Linear(1, embeddingDim),
+            nn.ReLU(),
+            nn.Linear(embeddingDim, embeddingDim),
+            nn.ReLU()
+        )
+        self.positinalEncoding = nn.Parameter(torch.randn(1, max_seq_len, embeddingDim))
+
+        self.badtrans = nn.Sequential()
+        for _ in range(num_layers):
+            self.badtrans.append(myBadTransfomerBlock(dim=embeddingDim, deepth=embeddingDeepth, max_seq_len=max_seq_len, debug=debug))
+        
+        self.windup = nn.Sequential(
+            nn.Linear(embeddingDim, embeddingDim),
+            nn.ReLU(),
+            nn.Linear(embeddingDim, 1)
+        )
+
+    def forward(self, x):
+        x = self.pre_embedding(x)
+        x = x + self.positinalEncoding[:, :x.size(1)]
+        x = self.badtrans(x)
+        x = self.windup(x)
         return x
 
-if __name__ == '__main__':
-    model = myModel(contextSize=1024)
-    print(model(torch.rand(1, 1024)))
+if __name__ == "__main__":
+    x = torch.randn(1, 4, 64)
+    badBlock = myBadTransfomerBlock(debug=True)
+    #print(badBlock(x))
+    badBlocks = myModel(debug=True)
+    x = torch.randn(1, 4, 1)
+    print(badBlocks(x))

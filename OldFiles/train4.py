@@ -1,7 +1,7 @@
 import Model
 import torch
 import torch.nn as nn
-import dataset as dataset
+import dataset4 as dataset
 from tqdm import tqdm
 import gpu_chooser
 import traceback
@@ -9,13 +9,13 @@ import traceback
 contextSize = 128
 batchSize = 8
 epoch = 8192
-learning_rate, weight_decay = 0.01, 1e-5
+learning_rate, weight_decay = 5e-4, 1e-5
 
 datar = dataset.DataWarpper(contextSize, './')
 
 trainingDevice = gpu_chooser.choose_gpu()
 
-theModel = Model.myModel(max_seq_len=contextSize, debug=False)
+theModel = Model.myModel(contextSize)
 
 try:
     # model.pth maybe trained in parallel mode
@@ -40,12 +40,15 @@ optim = torch.optim.Adam(theModel.parameters(), lr=learning_rate, weight_decay=w
 
 lossfunc = nn.L1Loss()
 
+if trainingDevice.type == 'cuda':
+    theModel = nn.DataParallel(theModel)
+
 for n in range(epoch):
     for i in tqdm(range(datar.totalBinSize // (contextSize * batchSize))):
         source, target = datar.makeBatch(batchSize)
-        source = source.to(trainingDevice).view(source.size(0), source.size(1), 1)
+        source = source.to(trainingDevice)
         target = target.to(trainingDevice)
-        modelResponse = theModel(source)[:, -1, 0]
+        modelResponse = theModel(source)
         loss = lossfunc(modelResponse, target)
         print('Loss: {}'.format(loss.item()))
         optim.zero_grad()
@@ -56,11 +59,11 @@ for n in range(epoch):
     torch.save(theModel.state_dict(), 'model.pth')
 
 test_batch, _ = datar.makeBatch(1)
-test_batch = test_batch.to(trainingDevice).view(test_batch.size(0), test_batch.size(1), 1)
+test_batch = test_batch.to(trainingDevice)
 while True:
-    modelResponse = theModel(test_batch)[:, -1, :]
+    modelResponse = theModel(test_batch)
     theWord = chr(int(modelResponse[-1].item() * 256))
     if theWord == '\0':
         break
     print(theWord, end='', flush=True)
-    test_batch[:, -1, :] = modelResponse
+    test_batch = torch.cat((test_batch[:, 1:], modelResponse), dim=1)
