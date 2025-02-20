@@ -4,12 +4,12 @@ import torch.nn as nn
 import dataset as dataset
 from tqdm import tqdm
 import gpu_chooser
-import traceback
+import time
 
 contextSize = 128
 batchSize = 8
 epoch = 8192
-learning_rate, weight_decay = 0.01, 1e-5
+learning_rate, weight_decay = 0.001, 1e-5
 
 datar = dataset.DataWarpper(contextSize, './')
 
@@ -20,40 +20,35 @@ theModel = Model.myModel(max_seq_len=contextSize, debug=False)
 try:
     # model.pth maybe trained in parallel mode
     state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
-    if 'module' in list(state_dict.keys())[0]:
-        new_state_dict = {}
-        for k, v in state_dict.items():
-            name = k[7:]
-            new_state_dict[name] = v
-        theModel.load_state_dict(new_state_dict)
-        print('Model resumed from Parallel checkpoint')
-    else:
-        theModel.load_state_dict(state_dict)
-        print('Model resumed from Normal checkpoint')
+    theModel.load_state_dict(state_dict)
+    print('Model loaded')
 except:
     print('No model checkpoint found, start training from scratch')
     pass
 
 theModel = theModel.to(trainingDevice)
 
-optim = torch.optim.Adam(theModel.parameters(), lr=learning_rate, weight_decay=weight_decay)
+optim = torch.optim.SGD(theModel.parameters(), lr=learning_rate, weight_decay=weight_decay)
+
+time.sleep(5)
 
 lossfunc = nn.L1Loss()
 
-for n in range(epoch):
-    for i in tqdm(range(datar.totalBinSize // (contextSize * batchSize))):
+for n in tqdm(range(epoch)):
+    for i in range(datar.totalBinSize // (contextSize * batchSize)):
         source, target = datar.makeBatch(batchSize)
         source = source.to(trainingDevice).view(source.size(0), source.size(1), 1)
         target = target.to(trainingDevice)
+        optim.zero_grad()
         modelResponse = theModel(source)[:, -1, 0]
         loss = lossfunc(modelResponse, target)
         print('Loss: {}'.format(loss.item()))
-        optim.zero_grad()
         loss.backward()
         optim.step()
-        
-    print('Epoch: {} Loss: {}'.format(n, loss.item()))
-    torch.save(theModel.state_dict(), 'model.pth')
+    if n % 512 == 0:
+        print('Epoch: {} Loss: {}'.format(n, loss.item()))
+        torch.save(theModel.state_dict(), 'model.pth')
+        print('Model saved')
 
 test_batch, _ = datar.makeBatch(1)
 test_batch = test_batch.to(trainingDevice).view(test_batch.size(0), test_batch.size(1), 1)
