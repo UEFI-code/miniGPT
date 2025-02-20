@@ -7,9 +7,9 @@ import gpu_chooser
 import time
 
 contextSize = 128
-batchSize = 8
+batchSize = 256
 epoch = 8192
-learning_rate, weight_decay = 0.001, 1e-5
+learning_rate, weight_decay = 5e-4, 1e-5
 
 datar = dataset.DataWarpper(contextSize, './')
 
@@ -20,6 +20,7 @@ theModel = Model.myModel(max_seq_len=contextSize, debug=False)
 try:
     # model.pth maybe trained in parallel mode
     state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
+    print(state_dict.keys())
     theModel.load_state_dict(state_dict)
     print('Model loaded')
 except:
@@ -53,9 +54,10 @@ for n in tqdm(range(epoch)):
 test_batch, _ = datar.makeBatch(1)
 test_batch = test_batch.to(trainingDevice).view(test_batch.size(0), test_batch.size(1), 1)
 while True:
-    modelResponse = theModel(test_batch)[:, -1, :]
-    theWord = chr(int(modelResponse[-1].item() * 256))
+    modelResponse = theModel(test_batch)[:, -1, 0]
+    theWord = chr(int(modelResponse[-1] * 256))
     if theWord == '\0':
         break
     print(theWord, end='', flush=True)
-    test_batch[:, -1, :] = modelResponse
+    test_batch[:, -1, 0] = modelResponse
+    test_batch = torch.concat((test_batch[:, 1:], torch.tensor([[[-128 / 255]]], device=trainingDevice, dtype=torch.float32)), dim=1)
