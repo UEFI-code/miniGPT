@@ -55,5 +55,5 @@ class DataWarpper():
         return torch.tensor(sourceBatch, dtype=torch.long), torch.tensor(targetBatch, dtype=torch.long)
 
 if __name__ == '__main__':
-    dataset = DataWarpper(8, './')
+    dataset = DataWarpper(8, './demo_pycode_dataset')
     print(dataset.makeBatch(4))

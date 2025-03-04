@@ -4,14 +4,13 @@ import torch.nn as nn
 import dataset_A as dataset_A
 from tqdm import tqdm
 import gpu_chooser
-import time
 
 contextSize = 128
-batchSize = 256
-epoch = 30000
-learning_rate, weight_decay = 1e-3, 1e-5
+batchSize = 1024
+epoch = 500000
+learning_rate, weight_decay = 1e-3, 0
 
-datar = dataset_A.DataWarpper(contextSize, './')
+datar = dataset_A.DataWarpper(contextSize, './demo_pycode_dataset')
 
 theModel = Model_A.myModel(max_seq_len=contextSize)
 
@@ -29,24 +28,28 @@ trainingDevice = gpu_chooser.choose_gpu()
 theModel = theModel.to(trainingDevice)
 
 def test(test_batch):
+    assert test_batch.shape[0] == 1
     def decode_str(x):
         return ''.join([chr(i) for i in x])
+    res = ''
     for _ in range(32):
         print(f'In: {test_batch}')
         modelResponse = theModel(test_batch)[0]
         modelResponse = torch.argmax(modelResponse, dim=1).tolist()
         print(f'Out: {modelResponse}')
         decoded_str = decode_str(modelResponse)
+        res += decoded_str[-1]
         print(f'Decoded: {decoded_str}')
         test_batch[0, -1] = modelResponse[-1]
         test_batch = torch.concat((test_batch[:, 1:], torch.tensor([[256]], device=trainingDevice, dtype=torch.long)), dim=1)
+    print(f'Final Result: {res}')
 
 optim = torch.optim.SGD(theModel.parameters(), lr=learning_rate, weight_decay=weight_decay)
 lossfunc = nn.CrossEntropyLoss()
 
 input('Press Enter to warm up')
 
-source, target = datar.makeBatch(32)
+source, target = datar.makeBatch(batchSize)
 source = source.to(trainingDevice)
 target = target.to(trainingDevice)
 
@@ -63,7 +66,7 @@ test(source[0:1])
 input('Press Enter to start training')
 
 for n in tqdm(range(epoch)):
-    for i in range(datar.totalBinSize // (contextSize * batchSize)):
+    for i in range(1 + datar.totalBinSize // (contextSize * batchSize)):
         source, target = datar.makeBatch(batchSize)
         source = source.to(trainingDevice)
         target = target.to(trainingDevice)
