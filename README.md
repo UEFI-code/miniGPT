@@ -1,10 +1,10 @@
 # miniGPT
 
-This is a mini size of GPT, with Multimodality
+This is a mini size of GPT, with Multimodality (Understanding Bytes Directly)
 
 ## How to Run
 
-Specific a folder with .txt & .bmp & .py files. 
+Specific a folder with .txt & .py files. 
 
 Then run train.py
 
