@@ -47,12 +47,12 @@ class DataWarpper():
                 self.bin_p += self.contextSize - 1 # this will trigger next file loading
                 continue
             sourceBatch.append(list(self.bin[self.bin_p:self.bin_p + self.contextSize]))
-            targetBatch.append(sourceBatch[-1][-1])
-            sourceBatch[-1][-1] = -128 # MASK
-            self.bin_p += self.contextSize
+            targetBatch.append(list(self.bin[self.bin_p:self.bin_p + self.contextSize]))
+            sourceBatch[-1][-1] = 256 # MASK
+            self.bin_p += 1
             item_count += 1
             
-        return torch.tensor(sourceBatch, dtype=torch.float32) / 255, torch.tensor(targetBatch, dtype=torch.float32) / 255
+        return torch.tensor(sourceBatch, dtype=torch.long), torch.tensor(targetBatch, dtype=torch.long)
 
 if __name__ == '__main__':
     dataset = DataWarpper(8, './')

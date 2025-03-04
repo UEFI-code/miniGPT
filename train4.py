@@ -1,21 +1,19 @@
-import Model
+import Model_A
 import torch
 import torch.nn as nn
-import dataset as dataset
+import dataset_A as dataset_A
 from tqdm import tqdm
 import gpu_chooser
 import time
 
 contextSize = 128
 batchSize = 256
-epoch = 50000
-learning_rate, weight_decay = 1e-4, 1e-5
+epoch = 30000
+learning_rate, weight_decay = 1e-3, 1e-5
 
-datar = dataset.DataWarpper(contextSize, './')
+datar = dataset_A.DataWarpper(contextSize, './')
 
-trainingDevice = gpu_chooser.choose_gpu()
-
-theModel = Model.myModel(max_seq_len=contextSize, debug=False)
+theModel = Model_A.myModel(max_seq_len=contextSize)
 
 try:
     # model.pth maybe trained in parallel mode
@@ -27,22 +25,51 @@ except:
     print('No model checkpoint found, start training from scratch')
     pass
 
+trainingDevice = gpu_chooser.choose_gpu()
 theModel = theModel.to(trainingDevice)
 
+def test(test_batch):
+    def decode_str(x):
+        return ''.join([chr(i) for i in x])
+    for _ in range(32):
+        print(f'In: {test_batch}')
+        modelResponse = theModel(test_batch)[0]
+        modelResponse = torch.argmax(modelResponse, dim=1).tolist()
+        print(f'Out: {modelResponse}')
+        decoded_str = decode_str(modelResponse)
+        print(f'Decoded: {decoded_str}')
+        test_batch[0, -1] = modelResponse[-1]
+        test_batch = torch.concat((test_batch[:, 1:], torch.tensor([[256]], device=trainingDevice, dtype=torch.long)), dim=1)
+
 optim = torch.optim.SGD(theModel.parameters(), lr=learning_rate, weight_decay=weight_decay)
+lossfunc = nn.CrossEntropyLoss()
 
-time.sleep(5)
+input('Press Enter to warm up')
 
-lossfunc = nn.L1Loss()
+source, target = datar.makeBatch(32)
+source = source.to(trainingDevice)
+target = target.to(trainingDevice)
+
+for i in range(100000):
+    optim.zero_grad()
+    output = theModel(source)
+    loss = lossfunc(output.view(-1, 256), target.view(-1))
+    print('Warm up Loss: {}'.format(loss.item()))
+    loss.backward()
+    optim.step()
+
+test(source[0:1])
+
+input('Press Enter to start training')
 
 for n in tqdm(range(epoch)):
     for i in range(datar.totalBinSize // (contextSize * batchSize)):
         source, target = datar.makeBatch(batchSize)
-        source = source.to(trainingDevice).view(source.size(0), source.size(1), 1)
+        source = source.to(trainingDevice)
         target = target.to(trainingDevice)
         optim.zero_grad()
-        modelResponse = theModel(source)[:, -1, 0]
-        loss = lossfunc(modelResponse, target)
+        modelResponse = theModel(source)
+        loss = lossfunc(modelResponse.view(-1, 256), target.view(-1))
         print('Loss: {}'.format(loss.item()))
         loss.backward()
         optim.step()
@@ -51,13 +78,4 @@ for n in tqdm(range(epoch)):
         torch.save(theModel.state_dict(), 'model.pth')
         print('Model saved')
 
-test_batch, _ = datar.makeBatch(1)
-test_batch = test_batch.to(trainingDevice).view(test_batch.size(0), test_batch.size(1), 1)
-while True:
-    modelResponse = theModel(test_batch)[:, -1, 0]
-    theWord = chr(int(modelResponse[-1] * 256))
-    if theWord == '\0':
-        break
-    print(theWord, end='', flush=True)
-    test_batch[:, -1, 0] = modelResponse
-    test_batch = torch.concat((test_batch[:, 1:], torch.tensor([[[-128 / 255]]], device=trainingDevice, dtype=torch.float32)), dim=1)
+test(source[0:1])
