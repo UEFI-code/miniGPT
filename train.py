@@ -8,9 +8,9 @@ import gpu_chooser
 contextSize = 128
 batchSize = 1024
 epoch = 500000
-learning_rate, weight_decay = 1e-3, 0
+learning_rate, weight_decay = 1e-3, 1e-6
 
-datar = dataset_A.DataWarpper(contextSize, './demo_pycode_dataset')
+datar = dataset_A.DataWarpper(contextSize, './demo_txt_dataset')
 
 theModel = Model_A.myModel(max_seq_len=contextSize)
 
@@ -35,11 +35,11 @@ def test(test_batch):
     for _ in range(32):
         print(f'In: {test_batch}')
         modelResponse = theModel(test_batch)[0]
-        modelResponse = torch.argmax(modelResponse, dim=1).tolist()
+        modelResponse = torch.argmax(modelResponse, dim=-1).tolist()
         print(f'Out: {modelResponse}')
         decoded_str = decode_str(modelResponse)
-        res += decoded_str[-1]
         print(f'Decoded: {decoded_str}')
+        res += decoded_str[-1]
         test_batch[0, -1] = modelResponse[-1]
         test_batch = torch.concat((test_batch[:, 1:], torch.tensor([[256]], device=trainingDevice, dtype=torch.long)), dim=1)
     print(f'Final Result: {res}')
@@ -53,31 +53,33 @@ source, target = datar.makeBatch(batchSize)
 source = source.to(trainingDevice)
 target = target.to(trainingDevice)
 
-for i in range(100000):
-    optim.zero_grad()
-    output = theModel(source)
-    loss = lossfunc(output.view(-1, 256), target.view(-1))
-    print('Warm up Loss: {}'.format(loss.item()))
-    loss.backward()
-    optim.step()
+for badtrans_now_deepth in range(1, theModel.badtrans_deepth+1):
+    for i in range(4096):
+        optim.zero_grad()
+        modelResponse = theModel(source, badtrans_now_deepth)
+        loss = lossfunc(modelResponse.view(-1, 256), target.view(-1))
+        print(f'Warmup badtrans_now_deepth {badtrans_now_deepth} epoch {i} Loss: {loss.item()}')
+        loss.backward()
+        optim.step()
 
+# torch.save(theModel.state_dict(), 'model.pth') # why this trigger a bug?
 test(source[0:1])
 
 input('Press Enter to start training')
 
 for n in tqdm(range(epoch)):
-    for i in range(1 + datar.totalBinSize // (contextSize * batchSize)):
+    for i in range(1 + datar.totalBinSize // batchSize): # the bin_p shift is equ to batchSize
         source, target = datar.makeBatch(batchSize)
         source = source.to(trainingDevice)
         target = target.to(trainingDevice)
         optim.zero_grad()
         modelResponse = theModel(source)
         loss = lossfunc(modelResponse.view(-1, 256), target.view(-1))
-        print('Loss: {}'.format(loss.item()))
+        print(f'Loss: {loss.item()}')
         loss.backward()
         optim.step()
     if n % 512 == 0:
-        print('Epoch: {} Loss: {}'.format(n, loss.item()))
+        #print('Epoch: {} Loss: {}'.format(n, loss.item()))
         torch.save(theModel.state_dict(), 'model.pth')
         print('Model saved')
 

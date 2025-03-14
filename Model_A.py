@@ -18,19 +18,22 @@ class myBadTransfomerBlock(nn.Module):
         return self.decoder(y)
 
 class myModel(nn.Module):
-    def __init__(self, max_seq_len = 128, embeddingDim = 128, num_layers=3):
+    def __init__(self, max_seq_len = 128, embeddingDim = 256, num_layers=6):
         super().__init__()
         self.pre_embedding = nn.Embedding(257, embeddingDim)
         
         self.badtrans = nn.Sequential()
         for _ in range(num_layers):
             self.badtrans.append(myBadTransfomerBlock(embdim=embeddingDim, max_seq_len=max_seq_len))
+        self.badtrans_deepth = num_layers
         
         self.windup = nn.Linear(embeddingDim, 256)
 
-    def forward(self, x):
+    def forward(self, x, badtrans_now_deepth = None):
         x = self.pre_embedding(x)
-        x = self.badtrans(x)
+        if badtrans_now_deepth is None:
+            badtrans_now_deepth = self.badtrans_deepth
+        x = self.badtrans[:badtrans_now_deepth](x)
         x = self.windup(x)
         return x
 

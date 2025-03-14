@@ -5,6 +5,8 @@ import numpy as np
 import os
 import random
 
+np.random.seed(233)
+
 class DataWarpper():
     def __init__(self, contextSize, folderpath, bigRAM = True):
         self.contextSize = contextSize
