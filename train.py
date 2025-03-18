@@ -4,11 +4,12 @@ import torch.nn as nn
 import dataset_A as dataset_A
 from tqdm import tqdm
 import gpu_chooser
+import time
 
 contextSize = 128
 batchSize = 1024
-epoch = 500000
-learning_rate, weight_decay = 1e-3, 1e-6
+epoch = 50000
+learning_rate, weight_decay = 1e-4, 0
 
 datar = dataset_A.DataWarpper(contextSize, './demo_txt_dataset')
 
@@ -18,10 +19,13 @@ try:
     # model.pth maybe trained in parallel mode
     state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
     print(state_dict.keys())
-    theModel.load_state_dict(state_dict)
-    print('Model loaded')
+    badtrans_start_deepth = state_dict['badtrans_now_deepth']
+    theModel.load_state_dict(state_dict, strict=False)
+    print(f'Model loaded, badtrans_start_deepth: {badtrans_start_deepth}')
+    time.sleep(3)
 except:
     print('No model checkpoint found, start training from scratch')
+    badtrans_start_deepth = 2
     pass
 
 trainingDevice = gpu_chooser.choose_gpu()
@@ -47,40 +51,42 @@ def test(test_batch):
 optim = torch.optim.SGD(theModel.parameters(), lr=learning_rate, weight_decay=weight_decay)
 lossfunc = nn.CrossEntropyLoss()
 
-input('Press Enter to warm up')
+# input('Press Enter to warm up')
 
-source, target = datar.makeBatch(batchSize)
-source = source.to(trainingDevice)
-target = target.to(trainingDevice)
+# source, target = datar.makeBatch(batchSize)
+# source = source.to(trainingDevice)
+# target = target.to(trainingDevice)
 
-for badtrans_now_deepth in range(1, theModel.badtrans_deepth+1):
-    for i in range(4096):
-        optim.zero_grad()
-        modelResponse = theModel(source, badtrans_now_deepth)
-        loss = lossfunc(modelResponse.view(-1, 256), target.view(-1))
-        print(f'Warmup badtrans_now_deepth {badtrans_now_deepth} epoch {i} Loss: {loss.item()}')
-        loss.backward()
-        optim.step()
+# for badtrans_now_deepth in range(1, theModel.badtrans_deepth+1):
+#     for i in range(4096):
+#         optim.zero_grad()
+#         modelResponse = theModel(source, badtrans_now_deepth)
+#         loss = lossfunc(modelResponse.view(-1, 256), target.view(-1))
+#         print(f'Warmup badtrans_now_deepth {badtrans_now_deepth} epoch {i} Loss: {loss.item()}')
+#         loss.backward()
+#         optim.step()
 
-# torch.save(theModel.state_dict(), 'model.pth') # why this trigger a bug?
-test(source[0:1])
+# # torch.save(theModel.state_dict(), 'model.pth') # why this trigger a bug?
+# test(source[0:1])
 
-input('Press Enter to start training')
+# input('Press Enter to start training')
 
-for n in tqdm(range(epoch)):
-    for i in range(1 + datar.totalBinSize // batchSize): # the bin_p shift is equ to batchSize
-        source, target = datar.makeBatch(batchSize)
-        source = source.to(trainingDevice)
-        target = target.to(trainingDevice)
-        optim.zero_grad()
-        modelResponse = theModel(source)
-        loss = lossfunc(modelResponse.view(-1, 256), target.view(-1))
-        print(f'Loss: {loss.item()}')
-        loss.backward()
-        optim.step()
-    if n % 512 == 0:
-        #print('Epoch: {} Loss: {}'.format(n, loss.item()))
-        torch.save(theModel.state_dict(), 'model.pth')
-        print('Model saved')
+for badtrans_now_deepth in range(badtrans_start_deepth, theModel.badtrans_deepth+1):
+    for n in tqdm(range(epoch)):
+        for i in range(1 + datar.totalBinSize // batchSize): # the bin_p shift is equ to batchSize
+            source, target = datar.makeBatch(batchSize)
+            source = source.to(trainingDevice)
+            target = target.to(trainingDevice)
+            optim.zero_grad()
+            modelResponse = theModel(source, badtrans_now_deepth)
+            loss = lossfunc(modelResponse.view(-1, 256), target.view(-1))
+            print(f'badtrans_now_deepth {badtrans_now_deepth} epoch {n} Loss: {loss.item()}')
+            loss.backward()
+            optim.step()
+        if n % 512 == 0:
+            state_dict = theModel.state_dict()
+            state_dict['badtrans_now_deepth'] = badtrans_now_deepth
+            torch.save(state_dict, 'model.pth')
+            print('Model saved')
 
 test(source[0:1])
