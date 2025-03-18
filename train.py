@@ -73,7 +73,7 @@ lossfunc = nn.CrossEntropyLoss()
 
 for badtrans_now_deepth in range(badtrans_start_deepth, theModel.badtrans_deepth+1):
     for n in tqdm(range(epoch)):
-        for i in range(1 + datar.totalBinSize // batchSize): # the bin_p shift is equ to batchSize
+        for _ in range(1 + datar.totalBinSize // batchSize): # the bin_p shift is equ to batchSize
             source, target = datar.makeBatch(batchSize)
             source = source.to(trainingDevice)
             target = target.to(trainingDevice)
