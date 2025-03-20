@@ -56,9 +56,14 @@ def query_or_update_tokenizer(token_list, text):
             p += len(new_token)
     return results
 
+def decode_back(token_list, results):
+    return ''.join([token_list[i] for i in results])
+
 if __name__ == "__main__":
     token_list = ['EOF', 'MASK']
     #build_tokenizer(token_list, 'Hello, World! 233 Test')
     results = query_or_update_tokenizer(token_list, 'Hello, World! 233 Test')
     print(f'Token List: {token_list}')
-    print(f'Results: {results}')
+    print(f'Encoded Results: {results}')
+    results = decode_back(token_list, results)
+    print(f'Decoded Results: {results}')
