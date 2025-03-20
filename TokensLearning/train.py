@@ -55,12 +55,12 @@ lossfunc = nn.CrossEntropyLoss()
 
 input('Press Enter to warm up')
 
-source, target = datar.makeBatch(batchSize)
+source, target = datar.makeBatch(contextSize)
 source = source.to(trainingDevice)
 target = target.to(trainingDevice)
 
 for badtrans_now_deepth in range(badtrans_start_deepth, theModel.badtrans_deepth+1):
-    for i in range(4096):
+    for i in range(32768):
         optim.zero_grad()
         modelResponse = theModel(source, badtrans_now_deepth)
         loss = lossfunc(modelResponse.view(-1, 2000), target.view(-1))
@@ -71,7 +71,7 @@ for badtrans_now_deepth in range(badtrans_start_deepth, theModel.badtrans_deepth
 # torch.save(theModel.state_dict(), 'model.pth') # why this trigger a bug?
 test(source[0:1])
 
-# input('Press Enter to start training')
+input('Press Enter to start training')
 
 for badtrans_now_deepth in range(badtrans_start_deepth, theModel.badtrans_deepth+1):
     for n in tqdm(range(epoch)):
