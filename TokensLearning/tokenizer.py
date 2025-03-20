@@ -56,8 +56,14 @@ def query_or_update_tokenizer(token_list, text):
             p += len(new_token)
     return results
 
-def decode_back(token_list, results):
-    return ''.join([token_list[i] for i in results])
+def decode_back(token_list, encoded_tokens):
+    decoded_tokens = []
+    for token_idx in encoded_tokens:
+        try:
+            decoded_tokens.append(token_list[token_idx])
+        except:
+            decoded_tokens.append('UNK')
+    return ''.join(decoded_tokens)
 
 if __name__ == "__main__":
     token_list = ['EOF', 'MASK']
