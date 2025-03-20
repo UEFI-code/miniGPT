@@ -6,11 +6,14 @@ from tqdm import tqdm
 import gpu_chooser
 import time
 import tokenizer
+import json
 
 contextSize = 128
 batchSize = 1024
 epoch = 50000
 learning_rate, weight_decay = 1e-3, 0
+
+token_list = json.load(open('demo_token_dataset/token_list.json', 'r'))
 
 datar = dataset_A.DataWarpper(contextSize, './demo_token_dataset')
 
@@ -40,7 +43,7 @@ def test(test_batch):
         modelResponse = theModel(test_batch)[0]
         modelResponse = torch.argmax(modelResponse, dim=-1).tolist()
         print(f'Out: {modelResponse}')
-        decoded_str = tokenizer.decode_back(modelResponse)
+        decoded_str = tokenizer.decode_back(token_list, modelResponse)
         print(f'Decoded: {decoded_str}')
         res += decoded_str[-1]
         test_batch[0, -1] = modelResponse[-1]
@@ -56,7 +59,7 @@ source, target = datar.makeBatch(batchSize)
 source = source.to(trainingDevice)
 target = target.to(trainingDevice)
 
-for badtrans_now_deepth in range(1, theModel.badtrans_deepth+1):
+for badtrans_now_deepth in range(badtrans_start_deepth, theModel.badtrans_deepth+1):
     for i in range(4096):
         optim.zero_grad()
         modelResponse = theModel(source, badtrans_now_deepth)
