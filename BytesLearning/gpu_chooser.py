@@ -1,9 +1,8 @@
-import os
 import torch
 
 def choose_gpu():
     # check macOS M1
-    if os.name == "Darwin":
+    if torch.backends.mps.is_available():
         return torch.device('mps')
     # check CUDA
     if torch.cuda.is_available():
