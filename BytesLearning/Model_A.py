@@ -2,31 +2,39 @@ import torch
 import torch.nn as nn
 
 class myBadTransfomerBlock(nn.Module):
-    def __init__(self, embdim=64, activation=nn.ReLU):
+    def __init__(self, embdim=64):
         super().__init__()
-        self.phase_A = nn.Sequential(
-            nn.Linear(embdim, embdim, bias=False),
-            activation(),
-        )
-        self.phase_B = nn.Sequential(
-            nn.Linear(embdim, embdim, bias=False),
-            activation(),
-        )
-        self.phase_C = nn.Sequential(
-            nn.Linear(embdim, embdim, bias=False),
-            activation(),
-        )
-        self.decoder = nn.Sequential(
-            nn.Linear(embdim, embdim, bias=False),
-            activation(),
+        self.phase_A = nn.Linear(embdim, embdim, bias=True)
+        self.phase_B = nn.Linear(embdim, embdim, bias=True)
+        self.phase_C = nn.Linear(embdim, embdim, bias=True)
+        self.out_proj = nn.Linear(embdim, embdim, bias=True)
+
+        self.act = nn.GELU()
+
+        self.norm1 = nn.LayerNorm(embdim)
+        self.norm2 = nn.LayerNorm(embdim)
+
+        self.ffn = nn.Sequential(
+            nn.Linear(embdim, embdim * 4),
+            nn.GELU(),
+            nn.Linear(embdim * 4, embdim),
         )
 
     def forward(self, x):
-        #y = y / (y.norm(dim=-1, keepdim=True) + 1e-6)
-        A, B, C = self.phase_A(x), self.phase_B(x), self.phase_C(x)
-        cmp_matrix = torch.matmul(A, B.transpose(1, 2))
-        out = torch.matmul(cmp_matrix, C) # this step is hybird token's knowledge
-        return self.decoder(out)
+        y = self.norm1(x)
+        A = self.phase_A(y)
+        B = self.phase_B(y)
+        C = self.phase_C(y)
+        attn = torch.matmul(A, B.transpose(1, 2))
+        attn = attn / y.size(-1)
+        attn = torch.softmax(attn, dim=-1)
+        y = torch.matmul(attn, C)
+        y = self.out_proj(y)
+        y = y + x
+        y = self.norm2(y)
+        y = self.ffn(y)
+        y = y + x
+        return y
 
 class myModel(nn.Module):
     def __init__(self, max_seq_len = 128, embeddingDim = 64, num_layers=3):
@@ -38,7 +46,7 @@ class myModel(nn.Module):
         for _ in range(num_layers):
             self.badtrans.append(myBadTransfomerBlock(embdim=embeddingDim))
         self.badtrans_deepth = num_layers
-        
+        self.final_norm = nn.LayerNorm(embeddingDim)
         self.windup = nn.Linear(embeddingDim, 256)
 
     def forward(self, x, badtrans_now_deepth = None):
@@ -46,6 +54,7 @@ class myModel(nn.Module):
         x = x + self.positionEmbedding[:, :x.size(1)]
         if badtrans_now_deepth is None: badtrans_now_deepth = self.badtrans_deepth
         x = self.badtrans[:badtrans_now_deepth](x)
+        x = self.final_norm(x)
         x = self.windup(x)
         return x
 
