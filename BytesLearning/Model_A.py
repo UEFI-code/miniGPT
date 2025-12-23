@@ -32,10 +32,10 @@ class myBadTransfomerBlock(nn.Module):
         y = torch.matmul(attn, C)
         y = self.out_proj(y)
         y = y + x
-        y = self.norm2(y)
-        y = self.ffn(y)
-        y = y + x
-        return y
+        z = self.norm2(y)
+        z = self.ffn(z)
+        z = z + y
+        return z
 
 class myModel(nn.Module):
     def __init__(self, max_seq_len = 128, embeddingDim = 64, num_layers=3):
