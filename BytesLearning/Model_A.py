@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 
 class myBadTransfomerBlock(nn.Module):
     def __init__(self, embdim=64):
@@ -26,7 +27,7 @@ class myBadTransfomerBlock(nn.Module):
         B = self.phase_B(y)
         C = self.phase_C(y)
         attn = torch.matmul(A, B.transpose(1, 2))
-        attn = attn / y.size(-1)
+        attn = attn / math.sqrt(y.size(-1))
         attn = torch.softmax(attn, dim=-1)
         y = torch.matmul(attn, C)
         y = self.out_proj(y)
@@ -46,6 +47,7 @@ class myModel(nn.Module):
         for _ in range(num_layers):
             self.badtrans.append(myBadTransfomerBlock(embdim=embeddingDim))
         self.badtrans_deepth = num_layers
+        
         self.final_norm = nn.LayerNorm(embeddingDim)
         self.windup = nn.Linear(embeddingDim, 256)
 
