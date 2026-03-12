@@ -12,7 +12,6 @@ class myBadTransfomerBlock(nn.Module):
 
         self.act = nn.GELU()
 
-        self.norm1 = nn.LayerNorm(embdim)
         self.norm2 = nn.LayerNorm(embdim)
 
         self.ffn = nn.Sequential(
@@ -22,12 +21,11 @@ class myBadTransfomerBlock(nn.Module):
         )
 
     def forward(self, x):
-        y = self.norm1(x)
-        A = self.phase_A(y)
-        B = self.phase_B(y)
-        C = self.phase_C(y)
+        A = self.phase_A(x)
+        B = self.phase_B(x)
+        C = self.phase_C(x)
         attn = torch.matmul(A, B.transpose(1, 2))
-        attn = attn / math.sqrt(y.size(-1))
+        attn = attn / math.sqrt(x.size(-1))
         attn = torch.softmax(attn, dim=-1)
         y = torch.matmul(attn, C)
         y = self.out_proj(y)
@@ -48,15 +46,12 @@ class myModel(nn.Module):
             self.badtrans.append(myBadTransfomerBlock(embdim=embeddingDim))
         self.badtrans_deepth = num_layers
         
-        self.final_norm = nn.LayerNorm(embeddingDim)
         self.windup = nn.Linear(embeddingDim, 256)
 
     def forward(self, x, badtrans_now_deepth = None):
-        x = self.pre_embedding(x)
-        x = x + self.positionEmbedding[:, :x.size(1)]
+        x = self.pre_embedding(x) + self.positionEmbedding[:, :x.size(1)]
         if badtrans_now_deepth is None: badtrans_now_deepth = self.badtrans_deepth
         x = self.badtrans[:badtrans_now_deepth](x)
-        x = self.final_norm(x)
         x = self.windup(x)
         return x
 
