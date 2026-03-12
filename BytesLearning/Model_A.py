@@ -7,7 +7,6 @@ class myBadTransfomerBlock(nn.Module):
         super().__init__()
         self.phase_A = nn.Linear(embdim, embdim, bias=True)
         self.phase_B = nn.Linear(embdim, embdim, bias=True)
-        self.phase_C = nn.Linear(embdim, embdim, bias=True)
         self.out_proj = nn.Linear(embdim, embdim, bias=True)
 
         self.act = nn.GELU()
@@ -16,11 +15,10 @@ class myBadTransfomerBlock(nn.Module):
     def forward(self, x):
         A = self.phase_A(x)
         B = self.phase_B(x)
-        C = self.phase_C(x)
         attn = torch.matmul(A, B.transpose(1, 2))
         attn = attn / math.sqrt(x.size(-1))
         attn = torch.softmax(attn, dim=-1)
-        y = torch.matmul(attn, C)
+        y = torch.matmul(attn, x)
         y = self.out_proj(y)
         y = self.norm2(y)
         return y + x
