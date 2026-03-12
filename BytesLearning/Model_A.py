@@ -8,8 +8,6 @@ class myBadTransfomerBlock(nn.Module):
         self.phase_A = nn.Linear(embdim, embdim, bias=True)
         self.phase_B = nn.Linear(embdim, embdim, bias=True)
         self.out_proj = nn.Linear(embdim, embdim, bias=True)
-
-        self.act = nn.GELU()
         self.norm2 = nn.LayerNorm(embdim)
 
     def forward(self, x):
