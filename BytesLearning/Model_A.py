@@ -15,7 +15,6 @@ class myBadTransfomerBlock(nn.Module):
         B = self.phase_B(x)
         attn = torch.matmul(A, B.transpose(1, 2))
         attn = attn / math.sqrt(x.size(-1))
-        attn = torch.softmax(attn, dim=-1)
         y = torch.matmul(attn, x)
         y = self.out_proj(y)
         y = self.norm2(y)
