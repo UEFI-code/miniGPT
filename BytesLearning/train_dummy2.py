@@ -8,8 +8,8 @@ import time
 
 contextSize = 64
 batchSize = 64
-epoch = 10000
-learning_rate, weight_decay = 1e-3, 0
+epoch = 3000
+learning_rate, weight_decay = 0.1, 0
 
 datar = dataset_A.DataWarpper(contextSize, './demo_txt_dataset')
 
