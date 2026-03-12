@@ -11,14 +11,7 @@ class myBadTransfomerBlock(nn.Module):
         self.out_proj = nn.Linear(embdim, embdim, bias=True)
 
         self.act = nn.GELU()
-
         self.norm2 = nn.LayerNorm(embdim)
-
-        self.ffn = nn.Sequential(
-            nn.Linear(embdim, embdim * 4),
-            nn.GELU(),
-            nn.Linear(embdim * 4, embdim),
-        )
 
     def forward(self, x):
         A = self.phase_A(x)
@@ -29,11 +22,8 @@ class myBadTransfomerBlock(nn.Module):
         attn = torch.softmax(attn, dim=-1)
         y = torch.matmul(attn, C)
         y = self.out_proj(y)
-        y = y + x
-        z = self.norm2(y)
-        z = self.ffn(z)
-        z = z + y
-        return z
+        y = self.norm2(y)
+        return y + x
 
 class myModel(nn.Module):
     def __init__(self, max_seq_len = 128, embeddingDim = 64, num_layers=3):
