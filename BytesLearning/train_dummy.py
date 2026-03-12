@@ -7,13 +7,13 @@ import gpu_chooser
 import time
 
 contextSize = 64
-batchSize = 32
-epoch = 100
-learning_rate, weight_decay = 1e-3, 0
+batchSize = 64
+epoch = 1000
+learning_rate, weight_decay = 0.1, 0
 
 datar = dataset_A.DataWarpper(contextSize, './demo_txt_dataset')
 
-theModel = Model_A.myModel(max_seq_len=contextSize, num_layers=1)
+theModel = Model_A.myModel(max_seq_len=contextSize, embeddingDim=128, num_layers=2)
 
 try:
     # model.pth maybe trained in parallel mode
@@ -34,7 +34,7 @@ def test(test_batch):
     def decode_str(x):
         return ''.join([chr(i) for i in x])
     res = ''
-    for _ in range(32):
+    for _ in range(contextSize):
         print(f'In: {test_batch}')
         modelResponse = theModel(test_batch)[0]
         modelResponse = torch.argmax(modelResponse, dim=-1).tolist()
