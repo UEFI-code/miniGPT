@@ -3,17 +3,15 @@ import torch
 import dataset_A as dataset_A
 import gpu_chooser
 
-contextSize = 128
-epoch = 500000
+contextSize = 64
 
 datar = dataset_A.DataWarpper(contextSize, './demo_txt_dataset')
 
-theModel = Model_A.myModel(max_seq_len=contextSize)
+theModel = Model_A.myModel(max_seq_len=contextSize, embeddingDim=256, num_layers=2)
 
-state_dict = torch.load('model.pth', map_location=torch.device('cpu'))
-badtrans_now_deepth = state_dict['badtrans_now_deepth']
+state_dict = torch.load('model_dummy.pth', map_location=torch.device('cpu'))
 theModel.load_state_dict(state_dict, strict=False)
-print(f'Model loaded, badtrans_start_deepth: {badtrans_now_deepth}')
+print(f'Model loaded')
 
 device = gpu_chooser.choose_gpu()
 theModel = theModel.to(device)
@@ -25,7 +23,7 @@ def test(test_batch):
     res = ''
     for _ in range(32):
         print(f'In: {test_batch}')
-        modelResponse = theModel(test_batch, badtrans_now_deepth)[0]
+        modelResponse = theModel(test_batch)[0]
         modelResponse = torch.argmax(modelResponse, dim=-1).tolist()
         print(f'Out: {modelResponse}')
         decoded_str = decode_str(modelResponse)
