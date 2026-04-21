@@ -42,8 +42,8 @@ def test(test_batch):
         decoded_str = decode_str(modelResponse)
         print(f'Decoded: {decoded_str}')
         res += decoded_str[-1]
-        test_batch[0, -1] = modelResponse[-1]
-        test_batch = torch.concat((test_batch[:, 1:], torch.tensor([[256]], device=trainingDevice, dtype=torch.long)), dim=1)
+        #test_batch[0, -1] = modelResponse[-1]
+        test_batch = torch.concat((test_batch[:, 1:], torch.tensor([[modelResponse[-1]]], device=trainingDevice, dtype=torch.long)), dim=1)
     print(f'Final Result: {res}')
 
 optim = torch.optim.SGD(theModel.parameters(), lr=learning_rate, weight_decay=weight_decay)

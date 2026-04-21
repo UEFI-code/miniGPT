@@ -7,7 +7,7 @@ contextSize = 64
 
 datar = dataset_A.DataWarpper(contextSize, './demo_txt_dataset')
 
-theModel = Model_A.myModel(max_seq_len=contextSize, embeddingDim=256, num_layers=2)
+theModel = Model_A.myModel(max_seq_len=contextSize, embeddingDim=64, num_layers=2)
 
 state_dict = torch.load('model_dummy.pth', map_location=torch.device('cpu'))
 theModel.load_state_dict(state_dict, strict=False)
@@ -29,8 +29,8 @@ def test(test_batch):
         decoded_str = decode_str(modelResponse)
         print(f'Decoded: {decoded_str}')
         res += decoded_str[-1]
-        test_batch[0, -1] = modelResponse[-1]
-        test_batch = torch.concat((test_batch[:, 1:], torch.tensor([[256]], device=device, dtype=torch.long)), dim=1)
+        #test_batch[0, -1] = modelResponse[-1]
+        test_batch = torch.concat((test_batch[:, 1:], torch.tensor([[modelResponse[-1]]], device=device, dtype=torch.long)), dim=1)
     print(f'Final Result: {res}')
 
 source, _ = datar.makeBatch(1)

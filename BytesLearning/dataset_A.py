@@ -48,9 +48,9 @@ class DataWarpper():
             if self.bin_p + self.contextSize - 1 > len(self.bin) - 1:
                 self.bin_p += self.contextSize - 1 # this will trigger next file loading
                 continue
-            sourceBatch.append(list(self.bin[self.bin_p:self.bin_p + self.contextSize]))
-            targetBatch.append(list(self.bin[self.bin_p:self.bin_p + self.contextSize]))
-            sourceBatch[-1][-1] = 256 # MASK
+            sourceBatch.append(list(self.bin[self.bin_p:self.bin_p + (self.contextSize-1)]))
+            targetBatch.append(list(self.bin[self.bin_p+1:self.bin_p+1 + (self.contextSize-1)]))
+            #sourceBatch[-1][-1] = 256 # MASK
             self.bin_p += 1
             item_count += 1
             
